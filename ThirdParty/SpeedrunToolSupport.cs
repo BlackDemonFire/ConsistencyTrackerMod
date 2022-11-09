@@ -15,15 +15,18 @@ namespace Celeste.Mod.ConsistencyTracker.ThirdParty {
         }
 
         private static void SaveState(Dictionary<Type, Dictionary<string, object>> savedvalues, Level level) {
-            Logger.Log(nameof(ConsistencyTrackerModule), "saveState called!");
+            //Logger.Log(nameof(ConsistencyTrackerModule), "saveState called!");
+            ConsistencyTrackerModule.Instance.SpeedrunToolSaveState(savedvalues, level);
         }
 
         private static void LoadState(Dictionary<Type, Dictionary<string, object>> savedvalues, Level level) {
-            Logger.Log(nameof(ConsistencyTrackerModule), "loadState called!");
+            //Logger.Log(nameof(ConsistencyTrackerModule), "loadState called!");
+            ConsistencyTrackerModule.Instance.SpeedrunToolLoadState(savedvalues, level);
         }
 
         private static void ClearState() {
-            Logger.Log(nameof(ConsistencyTrackerModule), "clearState called!");
+            //Logger.Log(nameof(ConsistencyTrackerModule), "clearState called!");
+            ConsistencyTrackerModule.Instance.SpeedrunToolClearState();
         }
     }
 }

@@ -11,9 +11,15 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
         public static readonly int MAX_ATTEMPT_COUNT = 100;
         public static Action<string> LogCallback;
 
+        public string CampaignName { get; set; }
         public string ChapterName { get; set; }
+        public string ChapterSID { get; set; }
+        public string ChapterSIDDialogSanitized { get; set; }
+        public string ChapterDebugName { get; set; }
         public RoomStats CurrentRoom { get; set; }
         public Dictionary<string, RoomStats> Rooms { get; set; } = new Dictionary<string, RoomStats>();
+
+        public ModState ModState { get; set; } = new ModState();
 
         /// <summary>Adds the attempt to the specified room.</summary>
         /// <param name="debugRoomName">debug name of the room.</param>
@@ -31,7 +37,7 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
 
         public void AddGoldenBerryDeath() {
             CurrentRoom.GoldenBerryDeaths++;
-            CurrentRoom.GoldenBerryDeathsThisSession++;
+            CurrentRoom.GoldenBerryDeathsSession++;
         }
 
         public void SetCurrentRoom(string debugRoomName) {
@@ -53,7 +59,7 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
         public void ResetCurrentSession() {
             foreach (string name in Rooms.Keys) {
                 RoomStats room = Rooms[name];
-                room.GoldenBerryDeathsThisSession = 0;
+                room.GoldenBerryDeathsSession = 0;
             }
         }
 
@@ -93,7 +99,7 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
         private Dictionary<string, int> UnvisitedRoomsToRoomNumber = new Dictionary<string, int>();
         public void OutputSummary(string outPath, PathInfo info, int attemptCount) {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"Tracker summary for chapter '{ChapterName}'");
+            sb.AppendLine($"Tracker summary for chapter '{ChapterDebugName}'");
             sb.AppendLine($"");
             sb.AppendLine($"--- Golden Berry Deaths ---"); //Room->Checkpoint->Chapter + 1
 
@@ -203,6 +209,64 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
             sb.AppendLine($"");
 
 
+            sb.AppendLine($"- Choke Rate"); //Choke Rate
+            Dictionary<CheckpointInfo, int> cpChokeRates = new Dictionary<CheckpointInfo, int>();
+            Dictionary<RoomInfo, int> roomChokeRates = new Dictionary<RoomInfo, int>();
+
+            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
+                cpChokeRates.Add(cpInfo, 0);
+
+                foreach (RoomInfo rInfo in cpInfo.Rooms) {
+                    roomChokeRates.Add(rInfo, 0);
+
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) continue; //Skip rooms the player has not yet visited.
+                    roomChokeRates[rInfo] = Rooms[rInfo.DebugRoomName].GoldenBerryDeaths;
+                    cpChokeRates[cpInfo] += Rooms[rInfo.DebugRoomName].GoldenBerryDeaths;
+                }
+            }
+
+            sb.AppendLine($"");
+            sb.AppendLine($"Room Name,Choke Rate,Golden Runs to Room,Room Deaths");
+            bool goldenAchieved = true;
+
+            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms) { //For every room
+
+                    int goldenRunsToRoom = 0;
+                    bool foundRoom = false;
+
+                    foreach (CheckpointInfo cpInfoTemp in info.Checkpoints) { //Iterate all remaining rooms and sum up their golden deaths
+                        foreach (RoomInfo rInfoTemp in cpInfoTemp.Rooms) {
+                            if (rInfoTemp == rInfo) foundRoom = true;
+                            if (foundRoom) {
+                                goldenRunsToRoom += roomChokeRates[rInfoTemp];
+                            }
+                        }
+                    }
+
+                    if (goldenAchieved) goldenRunsToRoom++;
+
+                    int roomNumber = -1;
+                    if (Rooms.ContainsKey(rInfo.DebugRoomName)) {
+                        roomNumber = Rooms[rInfo.DebugRoomName].RoomNumber;
+                    } else {
+                        roomNumber = UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName];
+                    }
+
+                    float roomChokeRate = 0f;
+                    if (goldenRunsToRoom != 0) {
+                        roomChokeRate = (float)roomChokeRates[rInfo] / (float)goldenRunsToRoom;
+                    }
+
+                    sb.AppendLine($"{cpInfo.Abbreviation}-{roomNumber},{roomChokeRate},{goldenRunsToRoom},{roomChokeRates[rInfo]}");
+
+                }
+            }
+
+
+            sb.AppendLine($"");
+
+
             sb.AppendLine($"- Golden Chance"); //Checkpoint->Chapter
             foreach (CheckpointInfo cpInfo in info.Checkpoints) {
                 string cpPercentStr = cpInfo.GoldenChance.ToString("P2", CultureInfo.InvariantCulture);
@@ -298,8 +362,9 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
     public class RoomStats {
         public string DebugRoomName { get; set; }
         public int GoldenBerryDeaths { get; set; } = 0;
-        public int GoldenBerryDeathsThisSession { get; set; } = 0;
+        public int GoldenBerryDeathsSession { get; set; } = 0;
         public List<bool> PreviousAttempts { get; set; } = new List<bool>();
+        public bool IsUnplayed { get => PreviousAttempts.Count == 0; }
         public bool LastAttempt { get => PreviousAttempts[PreviousAttempts.Count - 1]; }
         public float LastFiveRate { get => AverageSuccessOverN(5); }
         public float LastTenRate { get => AverageSuccessOverN(10); }
@@ -320,7 +385,13 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
                 if (PreviousAttempts[neededIndex]) countSucceeded++;
             }
 
+            if (countTotal == 0) return 0;
+
             return (float)countSucceeded / countTotal;
+        }
+        public float AverageSuccessOverSelectedN() {
+            int attemptCount = ConsistencyTrackerModule.Instance.ModSettings.SummarySelectedAttemptCount;
+            return AverageSuccessOverN(attemptCount);
         }
 
 
@@ -333,6 +404,11 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
             }
             return countSucceeded;
         }
+        public int SuccessesOverSelectedN() {
+            int attemptCount = ConsistencyTrackerModule.Instance.ModSettings.SummarySelectedAttemptCount;
+            return SuccessesOverN(attemptCount);
+        }
+
         public int AttemptsOverN(int n) {
             int countTotal = 0;
             for (int i = 0; i < n; i++) {
@@ -341,6 +417,10 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
                 countTotal++;
             }
             return countTotal;
+        }
+        public int AttemptsOverSelectedN() {
+            int attemptCount = ConsistencyTrackerModule.Instance.ModSettings.SummarySelectedAttemptCount;
+            return AttemptsOverN(attemptCount);
         }
 
         public void AddAttempt(bool success) {
@@ -360,7 +440,7 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
 
         public override string ToString() {
             string attemptList = string.Join(",", PreviousAttempts);
-            return $"{DebugRoomName};{GoldenBerryDeaths};{GoldenBerryDeathsThisSession};{LastFiveRate};{LastTenRate};{LastTwentyRate};{MaxRate};{attemptList}";
+            return $"{DebugRoomName};{GoldenBerryDeaths};{GoldenBerryDeathsSession};{LastFiveRate};{LastTenRate};{LastTwentyRate};{MaxRate};{attemptList}";
         }
 
         public static RoomStats ParseString(string line) {
@@ -406,7 +486,7 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
                 DebugRoomName = name,
                 PreviousAttempts = attemptList,
                 GoldenBerryDeaths = gbDeaths,
-                GoldenBerryDeathsThisSession = gbDeathsSession,
+                GoldenBerryDeathsSession = gbDeathsSession,
             };
         }
     }
