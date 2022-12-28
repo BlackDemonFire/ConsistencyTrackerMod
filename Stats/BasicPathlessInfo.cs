@@ -6,6 +6,9 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
     /*
      
      {player:holdingGolden}
+     {player:goldenDone}
+     {player:chapterCompleted}
+
      {mod:trackingPaused}
      {mod:recordingPath}
      {mod:modVersion}
@@ -34,9 +37,12 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
      "path+" note additionally means that the player needs to be ON the path for this stat
          */
 
-    public class BasicPathlessInfo : Stat
-    {
+    public class BasicPathlessInfo : Stat {
+        
         public static string PlayerHoldingGolden = "{player:holdingGolden}";
+        public static string PlayerGoldenDone = "{player:goldenDone}";
+        public static string PlayerChapterCompleted = "{player:chapterCompleted}";
+
         public static string ModTrackingPaused = "{mod:trackingPaused}";
         public static string ModRecordingPath = "{mod:recordingPath}";
         public static string ModModVersion = "{mod:modVersion}";
@@ -57,86 +63,59 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
         public static string ChapterSID = "{chapter:sid}";
         public static string ChapterSanitizedSID = "{chapter:sidSanitized}";
         public static string ChapterDebugName = "{chapter:debugName}";
-
         //public static string ChapterGoldenDeaths = "{chapter:goldenDeaths}";
         //public static string ChapterGoldenDeathsSession = "{chapter:goldenDeathsSession}";
         //public static string ChapterGoldenChance = "{chapter:goldenChance}";
 
         public static string CampaignName = "{campaign:name}";
 
-        public static List<string> IDs = new List<string>()
-        {
-            PlayerHoldingGolden,
-            ModTrackingPaused,
-            ModRecordingPath,
-            ModModVersion,
-            ModOverlayVersion,
-            RoomDebugName,
-            RoomGoldenDeaths,
-            RoomGoldenDeathsSession,
-            ChapterName,
-            ChapterDebugName,
+        public static List<string> IDs = new List<string>() {
+            PlayerHoldingGolden, PlayerGoldenDone, PlayerChapterCompleted,
+            ModTrackingPaused, ModRecordingPath, ModModVersion, ModOverlayVersion,
+            RoomDebugName, RoomGoldenDeaths, RoomGoldenDeathsSession,
+            ChapterName, ChapterDebugName, ChapterSID, ChapterSanitizedSID,
             CampaignName
         };
 
         public BasicPathlessInfo() : base(IDs) { }
 
-        public override string FormatStat(
-            PathInfo chapterPath,
-            ChapterStats chapterStats,
-            string format
-        )
-        {
-            format = format.Replace(
-                PlayerHoldingGolden,
-                $"{StatManager.FormatBool(chapterStats.ModState.PlayerIsHoldingGolden)}"
-            );
-            format = format.Replace(
-                ModTrackingPaused,
-                $"{StatManager.FormatBool(chapterStats.ModState.DeathTrackingPaused)}"
-            );
-            format = format.Replace(
-                ModRecordingPath,
-                $"{StatManager.FormatBool(chapterStats.ModState.RecordingPath)}"
-            );
+        public override string FormatStat(PathInfo chapterPath, ChapterStats chapterStats, string format) {
+            format = format.Replace(PlayerHoldingGolden, $"{StatManager.FormatBool(chapterStats.ModState.PlayerIsHoldingGolden)}");
+            format = format.Replace(PlayerGoldenDone, $"{StatManager.FormatBool(chapterStats.ModState.GoldenDone)}");
+            format = format.Replace(PlayerChapterCompleted, $"{StatManager.FormatBool(chapterStats.ModState.ChapterCompleted)}");
+
+            format = format.Replace(ModTrackingPaused, $"{StatManager.FormatBool(chapterStats.ModState.DeathTrackingPaused)}");
+            format = format.Replace(ModRecordingPath, $"{StatManager.FormatBool(chapterStats.ModState.RecordingPath)}");
             format = format.Replace(ModModVersion, $"{chapterStats.ModState.ModVersion}");
             format = format.Replace(ModOverlayVersion, $"{chapterStats.ModState.OverlayVersion}");
 
             format = format.Replace(RoomDebugName, $"{chapterStats.CurrentRoom.DebugRoomName}");
-            format = format.Replace(
-                RoomGoldenDeaths,
-                $"{chapterStats.CurrentRoom.GoldenBerryDeaths}"
-            );
-            format = format.Replace(
-                RoomGoldenDeathsSession,
-                $"{chapterStats.CurrentRoom.GoldenBerryDeathsSession}"
-            );
+            format = format.Replace(RoomGoldenDeaths, $"{chapterStats.CurrentRoom.GoldenBerryDeaths}");
+            format = format.Replace(RoomGoldenDeathsSession, $"{chapterStats.CurrentRoom.GoldenBerryDeathsSession}");
 
             format = format.Replace(ChapterDebugName, $"{chapterStats.ChapterDebugName}");
             format = format.Replace(ChapterName, $"{chapterStats.ChapterName}");
             format = format.Replace(CampaignName, $"{chapterStats.CampaignName}");
             format = format.Replace(ChapterSID, $"{chapterStats.ChapterSID}");
-            format = format.Replace(
-                ChapterSanitizedSID,
-                $"{chapterStats.ChapterSIDDialogSanitized}"
-            );
+            format = format.Replace(ChapterSanitizedSID, $"{chapterStats.ChapterSIDDialogSanitized}");
 
             return format;
         }
 
-        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats)
-        {
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
             return null;
         }
 
-        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations()
-        {
-            return new List<KeyValuePair<string, string>>() { };
-        }
 
-        public override List<StatFormat> GetStatExamples()
-        {
-            return new List<StatFormat>() { };
+        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
+            return new List<KeyValuePair<string, string>>() {
+
+            };
+        }
+        public override List<StatFormat> GetStatExamples() {
+            return new List<StatFormat>() {
+                
+            };
         }
     }
 }
