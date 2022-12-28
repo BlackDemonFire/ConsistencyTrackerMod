@@ -5,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Celeste.Mod.ConsistencyTracker.Models {
+namespace Celeste.Mod.ConsistencyTracker.Models
+{
     [Serializable]
-    public class ChapterStats {
+    public class ChapterStats
+    {
         public static readonly int MAX_ATTEMPT_COUNT = 100;
         public static Action<string> LogCallback;
 
@@ -17,136 +19,165 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
         public string ChapterSIDDialogSanitized { get; set; }
         public string ChapterDebugName { get; set; }
         public RoomStats CurrentRoom { get; set; }
-        public Dictionary<string, RoomStats> Rooms { get; set; } = new Dictionary<string, RoomStats>();
+        public Dictionary<string, RoomStats> Rooms { get; set; } =
+            new Dictionary<string, RoomStats>();
 
         public ModState ModState { get; set; } = new ModState();
 
         /// <summary>Adds the attempt to the specified room.</summary>
         /// <param name="debugRoomName">debug name of the room.</param>
         /// <param name="success">if the attempt was successful.</param>
-        public void AddAttempt(string debugRoomName, bool success) {
+        public void AddAttempt(string debugRoomName, bool success)
+        {
             RoomStats targetRoom = GetRoom(debugRoomName);
             targetRoom.AddAttempt(success);
         }
 
         /// <summary>Adds the attempt to the current room</summary>
         /// <param name="success">if the attempt was successful.</param>
-        public void AddAttempt(bool success) {
+        public void AddAttempt(bool success)
+        {
             CurrentRoom.AddAttempt(success);
         }
 
-        public void AddGoldenBerryDeath() {
+        public void AddGoldenBerryDeath()
+        {
             CurrentRoom.GoldenBerryDeaths++;
             CurrentRoom.GoldenBerryDeathsSession++;
         }
 
-        public void SetCurrentRoom(string debugRoomName) {
+        public void SetCurrentRoom(string debugRoomName)
+        {
             RoomStats targetRoom = GetRoom(debugRoomName);
             CurrentRoom = targetRoom;
         }
 
-        public RoomStats GetRoom(string debugRoomName) {
-            RoomStats targetRoom = null;
-            if (Rooms.ContainsKey(debugRoomName)) {
+        public RoomStats GetRoom(string debugRoomName)
+        {
+            RoomStats targetRoom;
+            if (Rooms.ContainsKey(debugRoomName))
+            {
                 targetRoom = Rooms[debugRoomName];
-            } else {
+            }
+            else
+            {
                 targetRoom = new RoomStats() { DebugRoomName = debugRoomName };
                 Rooms[debugRoomName] = targetRoom;
             }
             return targetRoom;
         }
 
-        public void ResetCurrentSession() {
-            foreach (string name in Rooms.Keys) {
+        public void ResetCurrentSession()
+        {
+            foreach (string name in Rooms.Keys)
+            {
                 RoomStats room = Rooms[name];
                 room.GoldenBerryDeathsSession = 0;
             }
         }
 
-        public string ToChapterStatsString() {
-            List<string> lines = new List<string>();
-            lines.Add($"{CurrentRoom}");
+        public string ToChapterStatsString()
+        {
+            List<string> lines = new() { $"{CurrentRoom}" };
 
-
-            foreach (string key in Rooms.Keys) {
+            foreach (string key in Rooms.Keys)
+            {
                 lines.Add($"{Rooms[key]}");
             }
 
-
-            return string.Join("\n", lines)+"\n";
+            return string.Join("\n", lines) + "\n";
         }
 
-        public static ChapterStats ParseString(string content) {
-            List<string> lines = content.Split(new string[] { "\n" }, StringSplitOptions.None).ToList();
-            ChapterStats stats = new ChapterStats();
+        public static ChapterStats ParseString(string content)
+        {
+            List<string> lines = content
+                .Split(new string[] { "\n" }, StringSplitOptions.None)
+                .ToList();
+            ChapterStats stats = new();
 
-            foreach (string line in lines) {
-                if (line.Trim() == "") break; //Skip last line
+            foreach (string line in lines)
+            {
+                if (line.Trim() == "")
+                    break; //Skip last line
 
                 RoomStats room = RoomStats.ParseString(line);
-                if (stats.Rooms.Count == 0) { //First element is always the current room
+                if (stats.Rooms.Count == 0)
+                { //First element is always the current room
                     stats.CurrentRoom = room;
                 }
 
-                if(!stats.Rooms.ContainsKey(room.DebugRoomName)) //Skip duplicate entries, as the current room is always the first line and also found later on
+                if (!stats.Rooms.ContainsKey(room.DebugRoomName)) //Skip duplicate entries, as the current room is always the first line and also found later on
                     stats.Rooms.Add(room.DebugRoomName, room);
             }
 
             return stats;
         }
 
+        private Dictionary<string, int> UnvisitedRoomsToRoomNumber = new();
 
-        private Dictionary<string, int> UnvisitedRoomsToRoomNumber = new Dictionary<string, int>();
-        public void OutputSummary(string outPath, PathInfo info, int attemptCount) {
-            StringBuilder sb = new StringBuilder();
+        public void OutputSummary(string outPath, PathInfo info, int attemptCount)
+        {
+            StringBuilder sb = new();
             sb.AppendLine($"Tracker summary for chapter '{ChapterDebugName}'");
             sb.AppendLine($"");
             sb.AppendLine($"--- Golden Berry Deaths ---"); //Room->Checkpoint->Chapter + 1
 
             int chapterDeaths = 0;
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) continue; //Skip rooms the player has not yet visited.
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                        continue; //Skip rooms the player has not yet visited.
 
                     RoomStats rStats = Rooms[rInfo.DebugRoomName];
                     chapterDeaths += rStats.GoldenBerryDeaths;
                 }
             }
 
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
                 int checkpointDeaths = 0;
 
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) continue; //Skip rooms the player has not yet visited.
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                        continue; //Skip rooms the player has not yet visited.
 
                     RoomStats rStats = Rooms[rInfo.DebugRoomName];
                     checkpointDeaths += rStats.GoldenBerryDeaths;
                 }
 
-
-                string percentStr = (checkpointDeaths / (double)chapterDeaths).ToString("P2", CultureInfo.InvariantCulture);
+                string percentStr = (checkpointDeaths / (double)chapterDeaths).ToString(
+                    "P2",
+                    CultureInfo.InvariantCulture
+                );
                 sb.AppendLine($"{cpInfo.Name}: {checkpointDeaths} ({percentStr})");
 
                 int roomNumber = 0;
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
                     roomNumber++;
 
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) {
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                    {
                         UnvisitedRoomsToRoomNumber.Add(rInfo.DebugRoomName, roomNumber);
                         sb.AppendLine($"\t{cpInfo.Abbreviation}-{roomNumber}: 0");
-                    } else {
+                    }
+                    else
+                    {
                         RoomStats rStats = Rooms[rInfo.DebugRoomName];
                         rStats.RoomNumber = roomNumber;
-                        sb.AppendLine($"\t{cpInfo.Abbreviation}-{roomNumber}: {rStats.GoldenBerryDeaths}");
+                        sb.AppendLine(
+                            $"\t{cpInfo.Abbreviation}-{roomNumber}: {rStats.GoldenBerryDeaths}"
+                        );
                     }
                 }
             }
             sb.AppendLine($"Total Golden Berry Deaths: {chapterDeaths}");
 
-
             sb.AppendLine($"");
             sb.AppendLine($"");
-
 
             sb.AppendLine($"--- Consistency Stats ---");
             sb.AppendLine($"- Success Rate"); //Room->Checkpoint->Chapter
@@ -157,14 +188,17 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
             int chapterAttempts = 0;
             double chapterGoldenChance = 1;
 
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
                 double checkpointSuccessRateSum = 0f;
                 int checkpointRoomCount = 0;
                 int checkpointSuccesses = 0;
                 int checkpointAttempts = 0;
 
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) continue; //Skip rooms the player has not yet visited.
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                        continue; //Skip rooms the player has not yet visited.
 
                     RoomStats rStats = Rooms[rInfo.DebugRoomName];
                     float rRate = rStats.AverageSuccessOverN(attemptCount);
@@ -188,38 +222,59 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
                     chapterGoldenChance *= rRate;
                 }
 
-                string cpPercentStr = (checkpointSuccessRateSum / checkpointRoomCount).ToString("P2", CultureInfo.InvariantCulture);
-                sb.AppendLine($"{cpInfo.Name}: {cpPercentStr} ({checkpointSuccesses} successes / {checkpointAttempts} attempts)");
+                string cpPercentStr = (checkpointSuccessRateSum / checkpointRoomCount).ToString(
+                    "P2",
+                    CultureInfo.InvariantCulture
+                );
+                sb.AppendLine(
+                    $"{cpInfo.Name}: {cpPercentStr} ({checkpointSuccesses} successes / {checkpointAttempts} attempts)"
+                );
 
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                    {
                         string rPercentStr = 0.ToString("P2", CultureInfo.InvariantCulture);
-                        sb.AppendLine($"\t{cpInfo.Abbreviation}-{UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName]}: {rPercentStr} (0 / 0)");
-                    } else {
+                        sb.AppendLine(
+                            $"\t{cpInfo.Abbreviation}-{UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName]}: {rPercentStr} (0 / 0)"
+                        );
+                    }
+                    else
+                    {
                         RoomStats rStats = Rooms[rInfo.DebugRoomName];
-                        string rPercentStr = rStats.AverageSuccessOverN(attemptCount).ToString("P2", CultureInfo.InvariantCulture);
-                        sb.AppendLine($"\t{cpInfo.Abbreviation}-{rStats.RoomNumber}: {rPercentStr} ({rStats.SuccessesOverN(attemptCount)} / {rStats.AttemptsOverN(attemptCount)})");
+                        string rPercentStr = rStats
+                            .AverageSuccessOverN(attemptCount)
+                            .ToString("P2", CultureInfo.InvariantCulture);
+                        sb.AppendLine(
+                            $"\t{cpInfo.Abbreviation}-{rStats.RoomNumber}: {rPercentStr} ({rStats.SuccessesOverN(attemptCount)} / {rStats.AttemptsOverN(attemptCount)})"
+                        );
                     }
                 }
             }
-            string cPercentStr = (chapterSuccessRateSum / chapterRoomCount).ToString("P2", CultureInfo.InvariantCulture);
-            sb.AppendLine($"Total Success Rate: {cPercentStr} ({chapterSuccesses} successes / {chapterAttempts} attempts)");
-
+            string cPercentStr = (chapterSuccessRateSum / chapterRoomCount).ToString(
+                "P2",
+                CultureInfo.InvariantCulture
+            );
+            sb.AppendLine(
+                $"Total Success Rate: {cPercentStr} ({chapterSuccesses} successes / {chapterAttempts} attempts)"
+            );
 
             sb.AppendLine($"");
 
-
             sb.AppendLine($"- Choke Rate"); //Choke Rate
-            Dictionary<CheckpointInfo, int> cpChokeRates = new Dictionary<CheckpointInfo, int>();
-            Dictionary<RoomInfo, int> roomChokeRates = new Dictionary<RoomInfo, int>();
+            Dictionary<CheckpointInfo, int> cpChokeRates = new();
+            Dictionary<RoomInfo, int> roomChokeRates = new();
 
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
                 cpChokeRates.Add(cpInfo, 0);
 
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
                     roomChokeRates.Add(rInfo, 0);
 
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) continue; //Skip rooms the player has not yet visited.
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                        continue; //Skip rooms the player has not yet visited.
                     roomChokeRates[rInfo] = Rooms[rInfo.DebugRoomName].GoldenBerryDeaths;
                     cpChokeRates[cpInfo] += Rooms[rInfo.DebugRoomName].GoldenBerryDeaths;
                 }
@@ -229,68 +284,87 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
             sb.AppendLine($"Room Name,Choke Rate,Golden Runs to Room,Room Deaths");
             bool goldenAchieved = true;
 
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
-                foreach (RoomInfo rInfo in cpInfo.Rooms) { //For every room
-
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                { //For every room
                     int goldenRunsToRoom = 0;
                     bool foundRoom = false;
 
-                    foreach (CheckpointInfo cpInfoTemp in info.Checkpoints) { //Iterate all remaining rooms and sum up their golden deaths
-                        foreach (RoomInfo rInfoTemp in cpInfoTemp.Rooms) {
-                            if (rInfoTemp == rInfo) foundRoom = true;
-                            if (foundRoom) {
+                    foreach (CheckpointInfo cpInfoTemp in info.Checkpoints)
+                    { //Iterate all remaining rooms and sum up their golden deaths
+                        foreach (RoomInfo rInfoTemp in cpInfoTemp.Rooms)
+                        {
+                            if (rInfoTemp == rInfo)
+                                foundRoom = true;
+                            if (foundRoom)
+                            {
                                 goldenRunsToRoom += roomChokeRates[rInfoTemp];
                             }
                         }
                     }
 
-                    if (goldenAchieved) goldenRunsToRoom++;
+                    if (goldenAchieved)
+                        goldenRunsToRoom++;
 
                     int roomNumber = -1;
-                    if (Rooms.ContainsKey(rInfo.DebugRoomName)) {
+                    if (Rooms.ContainsKey(rInfo.DebugRoomName))
+                    {
                         roomNumber = Rooms[rInfo.DebugRoomName].RoomNumber;
-                    } else {
+                    }
+                    else
+                    {
                         roomNumber = UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName];
                     }
 
                     float roomChokeRate = 0f;
-                    if (goldenRunsToRoom != 0) {
+                    if (goldenRunsToRoom != 0)
+                    {
                         roomChokeRate = (float)roomChokeRates[rInfo] / (float)goldenRunsToRoom;
                     }
 
-                    sb.AppendLine($"{cpInfo.Abbreviation}-{roomNumber},{roomChokeRate},{goldenRunsToRoom},{roomChokeRates[rInfo]}");
-
+                    sb.AppendLine(
+                        $"{cpInfo.Abbreviation}-{roomNumber},{roomChokeRate},{goldenRunsToRoom},{roomChokeRates[rInfo]}"
+                    );
                 }
             }
 
-
             sb.AppendLine($"");
 
-
             sb.AppendLine($"- Golden Chance"); //Checkpoint->Chapter
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
-                string cpPercentStr = cpInfo.GoldenChance.ToString("P2", CultureInfo.InvariantCulture);
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
+                string cpPercentStr = cpInfo.GoldenChance.ToString(
+                    "P2",
+                    CultureInfo.InvariantCulture
+                );
                 sb.AppendLine($"{cpInfo.Name}: {cpPercentStr}");
             }
             cPercentStr = chapterGoldenChance.ToString("P2", CultureInfo.InvariantCulture);
             sb.AppendLine($"Total Golden Chance: {cPercentStr}");
 
-
             sb.AppendLine($"");
 
-            StringBuilder sbGoldenRun = new StringBuilder();
+            StringBuilder sbGoldenRun = new();
             sbGoldenRun.AppendLine($"Room #,Room Name,Start->Room,Room->End");
             int roomIndexNumber = 0;
 
             sb.AppendLine($"- Golden Chance Over A Run"); //Room-wise from start to room / room to end
-            foreach (CheckpointInfo cpInfo in info.Checkpoints) {
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
+            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
                     roomIndexNumber++;
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) {
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
+                    {
                         string gcToPercentI = 0.ToString("P2", CultureInfo.InvariantCulture);
                         string gcFromPercentI = 0.ToString("P2", CultureInfo.InvariantCulture);
-                        sb.AppendLine($"\t{cpInfo.Abbreviation}-{UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName]}:\tStart -> Room: '{gcToPercentI}',\tRoom -> End '{gcFromPercentI}'");
-                        sbGoldenRun.AppendLine($"{roomIndexNumber},{cpInfo.Abbreviation}-{UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName]},{0},{0}");
+                        sb.AppendLine(
+                            $"\t{cpInfo.Abbreviation}-{UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName]}:\tStart -> Room: '{gcToPercentI}',\tRoom -> End '{gcFromPercentI}'"
+                        );
+                        sbGoldenRun.AppendLine(
+                            $"{roomIndexNumber},{cpInfo.Abbreviation}-{UnvisitedRoomsToRoomNumber[rInfo.DebugRoomName]},{0},{0}"
+                        );
                         continue;
                     }
 
@@ -300,22 +374,33 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
                     double gcFromRoom = 1;
 
                     bool hasReachedRoom = false;
-                    foreach (CheckpointInfo innerCpInfo in info.Checkpoints) {
-                        foreach (RoomInfo innerRInfo in innerCpInfo.Rooms) {
-                            if (innerRInfo.DebugRoomName == rInfo.DebugRoomName) hasReachedRoom = true;
+                    foreach (CheckpointInfo innerCpInfo in info.Checkpoints)
+                    {
+                        foreach (RoomInfo innerRInfo in innerCpInfo.Rooms)
+                        {
+                            if (innerRInfo.DebugRoomName == rInfo.DebugRoomName)
+                                hasReachedRoom = true;
 
-                            if (!Rooms.ContainsKey(innerRInfo.DebugRoomName)) {
-                                if (hasReachedRoom) {
+                            if (!Rooms.ContainsKey(innerRInfo.DebugRoomName))
+                            {
+                                if (hasReachedRoom)
+                                {
                                     gcFromRoom *= 0;
-                                } else {
+                                }
+                                else
+                                {
                                     gcToRoom *= 0;
                                 }
-
-                            } else {
+                            }
+                            else
+                            {
                                 RoomStats innerRStats = Rooms[innerRInfo.DebugRoomName];
-                                if (hasReachedRoom) {
+                                if (hasReachedRoom)
+                                {
                                     gcFromRoom *= innerRStats.AverageSuccessOverN(attemptCount);
-                                } else {
+                                }
+                                else
+                                {
                                     gcToRoom *= innerRStats.AverageSuccessOverN(attemptCount);
                                 }
                             }
@@ -324,8 +409,12 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
 
                     string gcToPercent = gcToRoom.ToString("P2", CultureInfo.InvariantCulture);
                     string gcFromPercent = gcFromRoom.ToString("P2", CultureInfo.InvariantCulture);
-                    sb.AppendLine($"\t{cpInfo.Abbreviation}-{rStats.RoomNumber}:\tStart -> Room: '{gcToPercent}',\tRoom -> End '{gcFromPercent}'");
-                    sbGoldenRun.AppendLine($"{roomIndexNumber},{cpInfo.Abbreviation}-{rStats.RoomNumber},{gcToRoom},{gcFromRoom}");
+                    sb.AppendLine(
+                        $"\t{cpInfo.Abbreviation}-{rStats.RoomNumber}:\tStart -> Room: '{gcToPercent}',\tRoom -> End '{gcFromPercent}'"
+                    );
+                    sbGoldenRun.AppendLine(
+                        $"{roomIndexNumber},{cpInfo.Abbreviation}-{rStats.RoomNumber},{gcToRoom},{gcFromRoom}"
+                    );
                 }
             }
             sb.AppendLine($"- Golden Chance Over A Run (Google Sheets pastable values)"); //Room-wise from start to room / room to end
@@ -333,12 +422,8 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
 
             sb.AppendLine($"");
 
-
             File.WriteAllText(outPath, sb.ToString());
         }
-
-
-
 
         /*
          Format for Sankey Diagram (https://sankeymatic.com/build/)
@@ -359,91 +444,142 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
          */
     }
 
-    public class RoomStats {
+    public class RoomStats
+    {
         public string DebugRoomName { get; set; }
         public int GoldenBerryDeaths { get; set; } = 0;
         public int GoldenBerryDeathsSession { get; set; } = 0;
         public List<bool> PreviousAttempts { get; set; } = new List<bool>();
-        public bool IsUnplayed { get => PreviousAttempts.Count == 0; }
-        public bool LastAttempt { get => PreviousAttempts[PreviousAttempts.Count - 1]; }
-        public float LastFiveRate { get => AverageSuccessOverN(5); }
-        public float LastTenRate { get => AverageSuccessOverN(10); }
-        public float LastTwentyRate { get => AverageSuccessOverN(20); }
-        public float MaxRate { get => AverageSuccessOverN(ChapterStats.MAX_ATTEMPT_COUNT); }
+        public bool IsUnplayed
+        {
+            get => PreviousAttempts.Count == 0;
+        }
+        public bool LastAttempt
+        {
+            get => PreviousAttempts[PreviousAttempts.Count - 1];
+        }
+        public float LastFiveRate
+        {
+            get => AverageSuccessOverN(5);
+        }
+        public float LastTenRate
+        {
+            get => AverageSuccessOverN(10);
+        }
+        public float LastTwentyRate
+        {
+            get => AverageSuccessOverN(20);
+        }
+        public float MaxRate
+        {
+            get => AverageSuccessOverN(ChapterStats.MAX_ATTEMPT_COUNT);
+        }
 
         public int RoomNumber { get; set; }
 
-        public float AverageSuccessOverN(int n) {
+        public float AverageSuccessOverN(int n)
+        {
             int countSucceeded = 0;
             int countTotal = 0;
 
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < n; i++)
+            {
                 int neededIndex = PreviousAttempts.Count - 1 - i;
-                if (neededIndex < 0) break;
+                if (neededIndex < 0)
+                    break;
 
                 countTotal++;
-                if (PreviousAttempts[neededIndex]) countSucceeded++;
+                if (PreviousAttempts[neededIndex])
+                    countSucceeded++;
             }
 
-            if (countTotal == 0) return 0;
+            if (countTotal == 0)
+                return 0;
 
             return (float)countSucceeded / countTotal;
         }
-        public float AverageSuccessOverSelectedN() {
-            int attemptCount = ConsistencyTrackerModule.Instance.ModSettings.SummarySelectedAttemptCount;
+
+        public float AverageSuccessOverSelectedN()
+        {
+            int attemptCount = ConsistencyTrackerModule
+                .Instance
+                .ModSettings
+                .SummarySelectedAttemptCount;
             return AverageSuccessOverN(attemptCount);
         }
 
-
-        public int SuccessesOverN(int n) {
+        public int SuccessesOverN(int n)
+        {
             int countSucceeded = 0;
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < n; i++)
+            {
                 int neededIndex = PreviousAttempts.Count - 1 - i;
-                if (neededIndex < 0) break;
-                if (PreviousAttempts[neededIndex]) countSucceeded++;
+                if (neededIndex < 0)
+                    break;
+                if (PreviousAttempts[neededIndex])
+                    countSucceeded++;
             }
             return countSucceeded;
         }
-        public int SuccessesOverSelectedN() {
-            int attemptCount = ConsistencyTrackerModule.Instance.ModSettings.SummarySelectedAttemptCount;
+
+        public int SuccessesOverSelectedN()
+        {
+            int attemptCount = ConsistencyTrackerModule
+                .Instance
+                .ModSettings
+                .SummarySelectedAttemptCount;
             return SuccessesOverN(attemptCount);
         }
 
-        public int AttemptsOverN(int n) {
+        public int AttemptsOverN(int n)
+        {
             int countTotal = 0;
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < n; i++)
+            {
                 int neededIndex = PreviousAttempts.Count - 1 - i;
-                if (neededIndex < 0) break;
+                if (neededIndex < 0)
+                    break;
                 countTotal++;
             }
             return countTotal;
         }
-        public int AttemptsOverSelectedN() {
-            int attemptCount = ConsistencyTrackerModule.Instance.ModSettings.SummarySelectedAttemptCount;
+
+        public int AttemptsOverSelectedN()
+        {
+            int attemptCount = ConsistencyTrackerModule
+                .Instance
+                .ModSettings
+                .SummarySelectedAttemptCount;
             return AttemptsOverN(attemptCount);
         }
 
-        public void AddAttempt(bool success) {
-            if (PreviousAttempts.Count >= ChapterStats.MAX_ATTEMPT_COUNT) {
+        public void AddAttempt(bool success)
+        {
+            if (PreviousAttempts.Count >= ChapterStats.MAX_ATTEMPT_COUNT)
+            {
                 PreviousAttempts.RemoveAt(0);
             }
 
             PreviousAttempts.Add(success);
         }
 
-        public void RemoveLastAttempt() {
-            if (PreviousAttempts.Count <= 0) {
+        public void RemoveLastAttempt()
+        {
+            if (PreviousAttempts.Count <= 0)
+            {
                 return;
             }
-            PreviousAttempts.RemoveAt(PreviousAttempts.Count-1);
+            PreviousAttempts.RemoveAt(PreviousAttempts.Count - 1);
         }
 
-        public override string ToString() {
+        public override string ToString()
+        {
             string attemptList = string.Join(",", PreviousAttempts);
             return $"{DebugRoomName};{GoldenBerryDeaths};{GoldenBerryDeathsSession};{LastFiveRate};{LastTenRate};{LastTwentyRate};{MaxRate};{attemptList}";
         }
 
-        public static RoomStats ParseString(string line) {
+        public static RoomStats ParseString(string line)
+        {
             //ChapterStats.LogCallback($"RoomStats -> Parsing line '{line}'");
 
             List<string> lines = line.Split(new string[] { ";" }, StringSplitOptions.None).ToList();
@@ -453,15 +589,21 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
             int gbDeathsSession = 0;
             string attemptListString;
 
-            try {
+            try
+            {
                 attemptListString = lines[7];
                 gbDeaths = int.Parse(lines[1]);
                 gbDeathsSession = int.Parse(lines[2]);
-            } catch (Exception) {
-                try {
+            }
+            catch (Exception)
+            {
+                try
+                {
                     attemptListString = lines[6];
                     gbDeaths = int.Parse(lines[1]);
-                } catch (Exception) {
+                }
+                catch (Exception)
+                {
                     attemptListString = lines[5];
                 }
             }
@@ -473,16 +615,19 @@ namespace Celeste.Mod.ConsistencyTracker.Models {
             //int gbDeaths = int.Parse(lines[1]);
             //string attemptListString = lines[6];
 
-            List<bool> attemptList = new List<bool>();
-            foreach (string boolStr in attemptListString.Split(new char[] { ',' })) {
+            List<bool> attemptList = new();
+            foreach (string boolStr in attemptListString.Split(new char[] { ',' }))
+            {
                 //ChapterStats.LogCallback($"\tIn loop -> {boolStr}");
-                if (boolStr.Trim() == "") continue;
+                if (boolStr.Trim() == "")
+                    continue;
 
                 bool value = bool.Parse(boolStr);
                 attemptList.Add(value);
             }
 
-            return new RoomStats() {
+            return new RoomStats()
+            {
                 DebugRoomName = name,
                 PreviousAttempts = attemptList,
                 GoldenBerryDeaths = gbDeaths,

@@ -9,35 +9,40 @@ using Celeste.Mod.ConsistencyTracker.Entities;
 using Celeste.Mod.ConsistencyTracker.Stats;
 using Celeste.Mod.ConsistencyTracker.Enums;
 
-namespace Celeste.Mod.ConsistencyTracker {
-    public class ConsistencyTrackerModule : EverestModule {
-
+namespace Celeste.Mod.ConsistencyTracker
+{
+    public class ConsistencyTrackerModule : EverestModule
+    {
         public static ConsistencyTrackerModule Instance;
-        private static readonly int LOG_FILE_COUNT = 10;
 
         public static readonly string OverlayVersion = "1.1.1";
         public static readonly string ModVersion = "1.3.6";
 
         public override Type SettingsType => typeof(ConsistencyTrackerSettings);
         public ConsistencyTrackerSettings ModSettings => (ConsistencyTrackerSettings)this._Settings;
-        static string BaseFolderPath = "./ConsistencyTracker/";
-
+        static readonly string BaseFolderPath = "./ConsistencyTracker/";
 
         private bool DidRestart = false;
-        private HashSet<string> ChaptersThisSession = new HashSet<string>();
+        private HashSet<string> ChaptersThisSession = new();
 
         #region Path Recording Variables
 
-        public bool DoRecordPath {
+        public bool DoRecordPath
+        {
             get => _DoRecordPath;
-            set {
-                if (value) {
-                    if (DisabledInRoomName != CurrentRoomName) {
+            set
+            {
+                if (value)
+                {
+                    if (DisabledInRoomName != CurrentRoomName)
+                    {
                         Path = new PathRecorder();
                         InsertCheckpointIntoPath(null, LastRoomWithCheckpoint);
                         Path.AddRoom(CurrentRoomName);
                     }
-                } else {
+                }
+                else
+                {
                     SaveRecordedRoomPath();
                 }
 
@@ -69,30 +74,28 @@ namespace Celeste.Mod.ConsistencyTracker {
 
         public StatManager StatsManager;
 
-
-        public ConsistencyTrackerModule() {
+        public ConsistencyTrackerModule()
+        {
             Instance = this;
         }
 
         #region Load/Unload Stuff
 
-        public override void Load() {
+        public override void Load()
+        {
             CheckFolderExists(BaseFolderPath);
             CheckFolderExists(GetPathToFolder("paths"));
             CheckFolderExists(GetPathToFolder("stats"));
             CheckFolderExists(GetPathToFolder("logs"));
             CheckFolderExists(GetPathToFolder("summaries"));
 
-            LogInit();
-            Log($"~~~===============~~~");
-            ChapterStats.LogCallback = Log;
-
             HookStuff();
 
             StatsManager = new StatManager();
         }
 
-        private void HookStuff() {
+        private void HookStuff()
+        {
             //Track where the player is
             On.Celeste.Level.Begin += Level_Begin;
             Everest.Events.Level.OnExit += Level_OnExit;
@@ -129,7 +132,8 @@ namespace Celeste.Mod.ConsistencyTracker {
             On.Celeste.LockBlock.TryOpen += LockBlock_TryOpen; //works
         }
 
-        private void UnHookStuff() {
+        private void UnHookStuff()
+        {
             On.Celeste.Level.Begin -= Level_Begin;
             Everest.Events.Level.OnExit -= Level_OnExit;
             Everest.Events.Level.OnComplete -= Level_OnComplete;
@@ -167,12 +171,14 @@ namespace Celeste.Mod.ConsistencyTracker {
             base.Initialize();
 
             // load SpeedrunTool if it exists
-            if (Everest.Modules.Any(m => m.Metadata.Name == "SpeedrunTool")) {
+            if (Everest.Modules.Any(m => m.Metadata.Name == "SpeedrunTool"))
+            {
                 SpeedrunToolSupport.Load();
             }
         }
 
-        public override void Unload() {
+        public override void Unload()
+        {
             UnHookStuff();
         }
 
@@ -180,149 +186,293 @@ namespace Celeste.Mod.ConsistencyTracker {
 
         #region Hooks
 
-        private void LockBlock_TryOpen(On.Celeste.LockBlock.orig_TryOpen orig, LockBlock self, Player player, Follower fol) {
+        private void LockBlock_TryOpen(
+            On.Celeste.LockBlock.orig_TryOpen orig,
+            LockBlock self,
+            Player player,
+            Follower fol
+        )
+        {
             orig(self, player, fol);
-            Log($"[LockBlock.TryOpen] Opened a door");
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(LockBlock_TryOpen)}",
+                "Opened a door"
+            );
             SetRoomCompleted(resetOnDeath: false);
         }
 
-        private DashCollisionResults ClutterSwitch_OnDashed(On.Celeste.ClutterSwitch.orig_OnDashed orig, ClutterSwitch self, Player player, Vector2 direction) {
-            Log($"[ClutterSwitch.OnDashed] Activated a clutter switch");
+        private DashCollisionResults ClutterSwitch_OnDashed(
+            On.Celeste.ClutterSwitch.orig_OnDashed orig,
+            ClutterSwitch self,
+            Player player,
+            Vector2 direction
+        )
+        {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(ClutterSwitch_OnDashed)}",
+                $"Activated a clutter switch"
+            );
             SetRoomCompleted(resetOnDeath: false);
             return orig(self, player, direction);
         }
 
-        private void Key_OnPlayer(On.Celeste.Key.orig_OnPlayer orig, Key self, Player player) {
-            Log($"[Key.OnPlayer] Picked up a key");
+        private void Key_OnPlayer(On.Celeste.Key.orig_OnPlayer orig, Key self, Player player)
+        {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Key_OnPlayer)}",
+                $"Picked up a key"
+            );
             orig(self, player);
             SetRoomCompleted(resetOnDeath: false);
         }
 
-        private void Cassette_OnPlayer(On.Celeste.Cassette.orig_OnPlayer orig, Cassette self, Player player) {
-            Log($"[Cassette.OnPlayer] Collected a cassette tape");
+        private void Cassette_OnPlayer(
+            On.Celeste.Cassette.orig_OnPlayer orig,
+            Cassette self,
+            Player player
+        )
+        {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Cassette_OnPlayer)}",
+                $"Collected a cassette tape"
+            );
             orig(self, player);
             SetRoomCompleted(resetOnDeath: false);
         }
 
-        private readonly List<EntityID> TouchedBerries = new List<EntityID>();
+        private readonly List<EntityID> TouchedBerries = new();
+
         // All touched berries need to be reset on death, since they either:
         // - already collected
         // - disappeared on death
-        private void Strawberry_OnPlayer(On.Celeste.Strawberry.orig_OnPlayer orig, Strawberry self, Player player) {
+        private void Strawberry_OnPlayer(
+            On.Celeste.Strawberry.orig_OnPlayer orig,
+            Strawberry self,
+            Player player
+        )
+        {
             orig(self, player);
 
-            if (TouchedBerries.Contains(self.ID)) return; //to not spam the log
+            if (TouchedBerries.Contains(self.ID))
+                return; //to not spam the log
             TouchedBerries.Add(self.ID);
 
-            Log($"[Strawberry.OnPlayer] Strawberry on player");
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Strawberry_OnPlayer)}",
+                $"Strawberry on player"
+            );
             SetRoomCompleted(resetOnDeath: true);
         }
 
-        private void Strawberry_OnCollect(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
-            Log($"[Strawberry.OnCollect] Collected a strawberry");
+        private void Strawberry_OnCollect(
+            On.Celeste.Strawberry.orig_OnCollect orig,
+            Strawberry self
+        )
+        {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Strawberry_OnCollect)}",
+                $"Collected a strawberry"
+            );
             orig(self);
             SetRoomCompleted(resetOnDeath: false);
         }
 
-        private void CoreModeToggle_OnChangeMode(On.Celeste.CoreModeToggle.orig_OnChangeMode orig, CoreModeToggle self, Session.CoreModes mode) {
-            Log($"[CoreModeToggle.OnChangeMode] Changed core mode to '{mode}'");
+        private void CoreModeToggle_OnChangeMode(
+            On.Celeste.CoreModeToggle.orig_OnChangeMode orig,
+            CoreModeToggle self,
+            Session.CoreModes mode
+        )
+        {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(CoreModeToggle_OnChangeMode)}",
+                $"Changed core mode to '{mode}'"
+            );
             orig(self, mode);
-            SetRoomCompleted(resetOnDeath:true);
+            SetRoomCompleted(resetOnDeath: true);
         }
 
-        private void Checkpoint_TurnOn(On.Celeste.Checkpoint.orig_TurnOn orig, Checkpoint cp, bool animate) {
+        private void Checkpoint_TurnOn(
+            On.Celeste.Checkpoint.orig_TurnOn orig,
+            Checkpoint cp,
+            bool animate
+        )
+        {
             orig(cp, animate);
-            Log($"[Checkpoint.TurnOn] cp.Position={cp.Position}, LastRoomWithCheckpoint={LastRoomWithCheckpoint}");
-            if (ModSettings.Enabled && DoRecordPath) {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Checkpoint_TurnOn)}",
+                $"cp.Position={cp.Position}, LastRoomWithCheckpoint={LastRoomWithCheckpoint}"
+            );
+            if (ModSettings.Enabled && DoRecordPath)
+            {
                 InsertCheckpointIntoPath(cp, LastRoomWithCheckpoint);
             }
         }
 
         //Not triggered when teleporting via debug map
-        private void Level_TeleportTo(On.Celeste.Level.orig_TeleportTo orig, Level level, Player player, string nextLevel, Player.IntroTypes introType, Vector2? nearestSpawn) {
+        private void Level_TeleportTo(
+            On.Celeste.Level.orig_TeleportTo orig,
+            Level level,
+            Player player,
+            string nextLevel,
+            Player.IntroTypes introType,
+            Vector2? nearestSpawn
+        )
+        {
             orig(level, player, nextLevel, introType, nearestSpawn);
-            Log($"[Level.TeleportTo] level.Session.LevelData.Name={SanitizeRoomName(level.Session.LevelData.Name)}");
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_TeleportTo)}",
+                $"level.Session.LevelData.Name={SanitizeRoomName(level.Session.LevelData.Name)}"
+            );
         }
 
-        private void Level_OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
+        private void Level_OnLoadLevel(
+            Level level,
+            Player.IntroTypes playerIntro,
+            bool isFromLoader
+        )
+        {
             string newCurrentRoom = SanitizeRoomName(level.Session.LevelData.Name);
             bool holdingGolden = PlayerIsHoldingGoldenBerry(level.Tracker.GetEntity<Player>());
 
-            Log($"[Level.OnLoadLevel] level.Session.LevelData.Name={newCurrentRoom}, playerIntro={playerIntro} | CurrentRoomName: '{CurrentRoomName}', PreviousRoomName: '{PreviousRoomName}'");
-            if (playerIntro == Player.IntroTypes.Respawn) { //Changing room via golden berry death or debug map teleport
-                if (CurrentRoomName != null && newCurrentRoom != CurrentRoomName) {
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_OnLoadLevel)}",
+                $"level.Session.LevelData.Name={newCurrentRoom}, playerIntro={playerIntro} | CurrentRoomName: '{CurrentRoomName}', PreviousRoomName: '{PreviousRoomName}'"
+            );
+            if (playerIntro == Player.IntroTypes.Respawn)
+            { //Changing room via golden berry death or debug map teleport
+                if (CurrentRoomName != null && newCurrentRoom != CurrentRoomName)
+                {
                     SetNewRoom(newCurrentRoom, false, holdingGolden);
                 }
             }
 
-            if (DidRestart) {
-                Log($"\tRequested reset of PreviousRoomName to null");
+            if (DidRestart)
+            {
+                Logger.Log(
+                    LogLevel.Debug,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_OnLoadLevel)}",
+                    $"\tRequested reset of PreviousRoomName to null"
+                );
                 DidRestart = false;
                 SetNewRoom(newCurrentRoom, false, holdingGolden);
                 PreviousRoomName = null;
             }
 
-            if (isFromLoader) {
+            if (isFromLoader)
+            {
                 level.Add(new RoomOverlay());
             }
         }
 
-        private void Level_OnExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
-            Log($"[Level.OnExit] mode={mode}, snow={snow}");
-            if (mode == LevelExit.Mode.Restart) {
+        private void Level_OnExit(
+            Level level,
+            LevelExit exit,
+            LevelExit.Mode mode,
+            Session session,
+            HiresSnow snow
+        )
+        {
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_OnExit)}",
+                $"mode={mode}, snow={snow}"
+            );
+            if (mode == LevelExit.Mode.Restart)
+            {
                 DidRestart = true;
-            } else if (mode == LevelExit.Mode.GoldenBerryRestart) {
+            }
+            else if (mode == LevelExit.Mode.GoldenBerryRestart)
+            {
                 DidRestart = true;
 
-                if (ModSettings.Enabled && !ModSettings.PauseDeathTracking) { //Only count golden berry deaths when enabled
+                if (ModSettings.Enabled && !ModSettings.PauseDeathTracking)
+                { //Only count golden berry deaths when enabled
                     CurrentChapterStats?.AddGoldenBerryDeath();
-                    if (ModSettings.OnlyTrackWithGoldenBerry) {
+                    if (ModSettings.OnlyTrackWithGoldenBerry)
+                    {
                         CurrentChapterStats.AddAttempt(false);
                     }
                 }
             }
 
-            if (DoRecordPath) {
+            if (DoRecordPath)
+            {
                 DoRecordPath = false;
                 ModSettings.RecordPath = false;
             }
         }
 
-        private void Level_OnComplete(Level level) {
-            Log($"[Level.OnComplete] Incrementing {CurrentChapterStats?.CurrentRoom.DebugRoomName}");
-            if(ModSettings.Enabled && !ModSettings.PauseDeathTracking)
+        private void Level_OnComplete(Level level)
+        {
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_OnComplete)}",
+                $"Incrementing {CurrentChapterStats?.CurrentRoom.DebugRoomName}"
+            );
+            if (ModSettings.Enabled && !ModSettings.PauseDeathTracking)
                 CurrentChapterStats?.AddAttempt(true);
             SaveChapterStats();
         }
 
-        private void Level_Begin(On.Celeste.Level.orig_Begin orig, Level level) {
-            Log($"[Level.Begin] Calling ChangeChapter with 'level.Session'");
+        private void Level_Begin(On.Celeste.Level.orig_Begin orig, Level level)
+        {
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_Begin)}",
+                $"Calling ChangeChapter with 'level.Session'"
+            );
             ChangeChapter(level.Session);
             orig(level);
         }
 
-        private void Level_OnTransitionTo(Level level, LevelData levelDataNext, Vector2 direction) {
-            if (levelDataNext.HasCheckpoint) {
+        private void Level_OnTransitionTo(Level level, LevelData levelDataNext, Vector2 direction)
+        {
+            if (levelDataNext.HasCheckpoint)
+            {
                 LastRoomWithCheckpoint = levelDataNext.Name;
             }
 
             string roomName = SanitizeRoomName(levelDataNext.Name);
-            Log($"[Level.OnTransitionTo] levelData.Name->{roomName}, level.Completed->{level.Completed}, level.NewLevel->{level.NewLevel}, level.Session.StartCheckpoint->{level.Session.StartCheckpoint}");
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Level_OnTransitionTo)}",
+                $"levelData.Name->{roomName}, level.Completed->{level.Completed}, level.NewLevel->{level.NewLevel}, level.Session.StartCheckpoint->{level.Session.StartCheckpoint}"
+            );
             bool holdingGolden = PlayerIsHoldingGoldenBerry(level.Tracker.GetEntity<Player>());
             SetNewRoom(roomName, true, holdingGolden);
         }
 
-        private void Player_OnDie(Player player) {
+        private void Player_OnDie(Player player)
+        {
             TouchedBerries.Clear();
             bool holdingGolden = PlayerIsHoldingGoldenBerry(player);
 
-            Log($"[Player.OnDie] Player died. (holdingGolden: {holdingGolden})");
-            if (_CurrentRoomCompletedResetOnDeath) {
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(Player_OnDie)}",
+                $"Player died. (holdingGolden: {holdingGolden})"
+            );
+            if (_CurrentRoomCompletedResetOnDeath)
+            {
                 _CurrentRoomCompleted = false;
             }
 
-            if (ModSettings.Enabled) {
-                if (!ModSettings.PauseDeathTracking && (!ModSettings.OnlyTrackWithGoldenBerry || holdingGolden))
+            if (ModSettings.Enabled)
+            {
+                if (
+                    !ModSettings.PauseDeathTracking
+                    && (!ModSettings.OnlyTrackWithGoldenBerry || holdingGolden)
+                )
                     CurrentChapterStats?.AddAttempt(false);
                 SaveChapterStats();
             }
@@ -332,21 +482,34 @@ namespace Celeste.Mod.ConsistencyTracker {
 
         #region State Management
 
-        private string SanitizeRoomName(string name) {
+        private string SanitizeRoomName(string name)
+        {
             name = name.Replace(";", "");
             return name;
         }
 
-        private void ChangeChapter(Session session) {
-            Log($"[ChangeChapter] Called chapter change");
+        private void ChangeChapter(Session session)
+        {
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(ChangeChapter)}",
+                "Called chapter change"
+            );
             AreaData area = AreaData.Areas[session.Area.ID];
             string chapName = area.Name;
             string chapNameClean = chapName.DialogCleanOrNull() ?? chapName.SpacedPascalCase();
             string campaignName = DialogExt.CleanLevelSet(area.GetLevelSet());
 
-            Log($"[ChangeChapter] Level->{session.Level}, session.Area.GetSID()->{session.Area.GetSID()}, session.Area.Mode->{session.Area.Mode}, chapterNameClean->{chapNameClean}, campaignName->{campaignName}");
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(ChangeChapter)}",
+                $"Level->{session.Level}, session.Area.GetSID()->{session.Area.GetSID()}, session.Area.Mode->{session.Area.Mode}, chapterNameClean->{chapNameClean}, campaignName->{campaignName}"
+            );
 
-            CurrentChapterDebugName = ($"{session.MapData.Data.SID}_{session.Area.Mode}").Replace("/", "_");
+            CurrentChapterDebugName = ($"{session.MapData.Data.SID}_{session.Area.Mode}").Replace(
+                "/",
+                "_"
+            );
 
             //string test2 = Dialog.Get($"luma_farewellbb_FarewellBB_b_intro");
             //Log($"[ChangeChapter] Dialog Test 2: {test2}");
@@ -358,29 +521,45 @@ namespace Celeste.Mod.ConsistencyTracker {
             CurrentChapterStats = GetCurrentChapterStats();
 
             CurrentChapterStats.ChapterSID = session.MapData.Data.SID;
-            CurrentChapterStats.ChapterSIDDialogSanitized = SanitizeSIDForDialog(session.MapData.Data.SID);
+            CurrentChapterStats.ChapterSIDDialogSanitized = SanitizeSIDForDialog(
+                session.MapData.Data.SID
+            );
             CurrentChapterStats.ChapterName = chapNameClean;
             CurrentChapterStats.CampaignName = campaignName;
 
             TouchedBerries.Clear();
 
             SetNewRoom(CurrentRoomName, false, false);
-            if (session.LevelData.HasCheckpoint) {
+            if (session.LevelData.HasCheckpoint)
+            {
                 LastRoomWithCheckpoint = CurrentRoomName;
-            } else {
+            }
+            else
+            {
                 LastRoomWithCheckpoint = null;
             }
 
-            if (!DoRecordPath && ModSettings.RecordPath) {
+            if (!DoRecordPath && ModSettings.RecordPath)
+            {
                 DoRecordPath = true;
             }
         }
 
-        public void SetNewRoom(string newRoomName, bool countDeath=true, bool holdingGolden=false) {
+        public void SetNewRoom(
+            string newRoomName,
+            bool countDeath = true,
+            bool holdingGolden = false
+        )
+        {
             _PlayerIsHoldingGolden = holdingGolden;
 
-            if (PreviousRoomName == newRoomName && !_CurrentRoomCompleted) { //Don't complete if entering previous room and current room was not completed
-                Log($"[SetNewRoom] Entered previous room '{PreviousRoomName}'");
+            if (PreviousRoomName == newRoomName && !_CurrentRoomCompleted)
+            { //Don't complete if entering previous room and current room was not completed
+                Logger.Log(
+                    LogLevel.Info,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SetNewRoom)}",
+                    $"Entered previous room '{PreviousRoomName}'"
+                );
                 PreviousRoomName = CurrentRoomName;
                 CurrentRoomName = newRoomName;
                 CurrentChapterStats?.SetCurrentRoom(newRoomName);
@@ -388,19 +567,29 @@ namespace Celeste.Mod.ConsistencyTracker {
                 return;
             }
 
-
-            Log($"[SetNewRoom] Entered new room '{newRoomName}' | Holding golden: '{holdingGolden}'");
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SetNewRoom)}",
+                $"Entered new room '{newRoomName}' | Holding golden: '{holdingGolden}'"
+            );
 
             PreviousRoomName = CurrentRoomName;
             CurrentRoomName = newRoomName;
             _CurrentRoomCompleted = false;
 
-            if (DoRecordPath) {
+            if (DoRecordPath)
+            {
                 Path.AddRoom(newRoomName);
             }
 
-            if (ModSettings.Enabled && CurrentChapterStats != null) {
-                if (countDeath && !ModSettings.PauseDeathTracking && (!ModSettings.OnlyTrackWithGoldenBerry || holdingGolden)) {
+            if (ModSettings.Enabled && CurrentChapterStats != null)
+            {
+                if (
+                    countDeath
+                    && !ModSettings.PauseDeathTracking
+                    && (!ModSettings.OnlyTrackWithGoldenBerry || holdingGolden)
+                )
+                {
                     CurrentChapterStats.AddAttempt(true);
                 }
                 CurrentChapterStats.SetCurrentRoom(newRoomName);
@@ -408,147 +597,222 @@ namespace Celeste.Mod.ConsistencyTracker {
             }
         }
 
-        private void SetRoomCompleted(bool resetOnDeath=false) {
+        private void SetRoomCompleted(bool resetOnDeath = false)
+        {
             _CurrentRoomCompleted = true;
             _CurrentRoomCompletedResetOnDeath = resetOnDeath;
         }
 
-        private bool PlayerIsHoldingGoldenBerry(Player player) {
+        private bool PlayerIsHoldingGoldenBerry(Player player)
+        {
             if (player == null || player.Leader == null || player.Leader.Followers == null)
                 return false;
 
-            return player.Leader.Followers.Any((f) => {
-                if (!(f.Entity is Strawberry))
-                    return false;
+            return player.Leader.Followers.Any(
+                (f) =>
+                {
+                    if (f.Entity is not Strawberry)
+                        return false;
 
-                Strawberry berry = (Strawberry)f.Entity;
+                    Strawberry berry = (Strawberry)f.Entity;
 
-                if (!berry.Golden || berry.Winged)
-                    return false;
+                    if (!berry.Golden || berry.Winged)
+                        return false;
 
-                return true;
-            });
+                    return true;
+                }
+            );
         }
 
         #region Speedrun Tool Save States
 
-        public void SpeedrunToolSaveState(Dictionary<Type, Dictionary<string, object>> savedvalues, Level level) {
+        public void SpeedrunToolSaveState(
+            Dictionary<Type, Dictionary<string, object>> savedvalues,
+            Level level
+        )
+        {
             Type type = GetType();
-            if (!savedvalues.ContainsKey(type)) {
+            if (!savedvalues.ContainsKey(type))
+            {
                 savedvalues.Add(type, new Dictionary<string, object>());
                 savedvalues[type].Add(nameof(PreviousRoomName), PreviousRoomName);
                 savedvalues[type].Add(nameof(CurrentRoomName), CurrentRoomName);
                 savedvalues[type].Add(nameof(_CurrentRoomCompleted), _CurrentRoomCompleted);
-                savedvalues[type].Add(nameof(_CurrentRoomCompletedResetOnDeath), _CurrentRoomCompletedResetOnDeath);
-            } else {
+                savedvalues[type].Add(
+                    nameof(_CurrentRoomCompletedResetOnDeath),
+                    _CurrentRoomCompletedResetOnDeath
+                );
+            }
+            else
+            {
                 savedvalues[type][nameof(PreviousRoomName)] = PreviousRoomName;
                 savedvalues[type][nameof(CurrentRoomName)] = CurrentRoomName;
                 savedvalues[type][nameof(_CurrentRoomCompleted)] = _CurrentRoomCompleted;
-                savedvalues[type][nameof(_CurrentRoomCompletedResetOnDeath)] = _CurrentRoomCompletedResetOnDeath;
+                savedvalues[type][nameof(_CurrentRoomCompletedResetOnDeath)] =
+                    _CurrentRoomCompletedResetOnDeath;
             }
         }
 
-        public void SpeedrunToolLoadState(Dictionary<Type, Dictionary<string, object>> savedvalues, Level level) {
+        public void SpeedrunToolLoadState(
+            Dictionary<Type, Dictionary<string, object>> savedvalues,
+            Level level
+        )
+        {
             Type type = GetType();
-            if (!savedvalues.ContainsKey(type)) {
-                Logger.Log(nameof(ConsistencyTrackerModule), "Trying to load state without prior saving a state...");
+            if (!savedvalues.ContainsKey(type))
+            {
+                Logger.Log(
+                    LogLevel.Info,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SpeedrunToolLoadState)}",
+                    "Trying to load state without prior saving a state..."
+                );
                 return;
             }
 
-            PreviousRoomName = (string) savedvalues[type][nameof(PreviousRoomName)];
-            CurrentRoomName = (string) savedvalues[type][nameof(CurrentRoomName)];
-            _CurrentRoomCompleted = (bool) savedvalues[type][nameof(_CurrentRoomCompleted)];
-            _CurrentRoomCompletedResetOnDeath = (bool) savedvalues[type][nameof(_CurrentRoomCompletedResetOnDeath)];
+            PreviousRoomName = (string)savedvalues[type][nameof(PreviousRoomName)];
+            CurrentRoomName = (string)savedvalues[type][nameof(CurrentRoomName)];
+            _CurrentRoomCompleted = (bool)savedvalues[type][nameof(_CurrentRoomCompleted)];
+            _CurrentRoomCompletedResetOnDeath = (bool)
+                savedvalues[type][nameof(_CurrentRoomCompletedResetOnDeath)];
 
             CurrentChapterStats.SetCurrentRoom(CurrentRoomName);
             SaveChapterStats();
         }
 
-        public void SpeedrunToolClearState() {
+        public void SpeedrunToolClearState()
+        {
             //No action
         }
 
         #endregion
-
         #endregion
 
         #region Data Import/Export
 
-        public static string GetPathToFile(string file) {
-            return BaseFolderPath + file;
-        }
-        public static string GetPathToFolder(string folder) {
-            return BaseFolderPath + folder + "/";
-        }
-        public static void CheckFolderExists(string folderPath) {
-            if (!Directory.Exists(folderPath)) {
+        public static string GetPathToFile(string file) => BaseFolderPath + file;
+
+        public static string GetPathToFolder(string folder) => $"{BaseFolderPath}{folder}/";
+
+        public static void CheckFolderExists(string folderPath)
+        {
+            if (!Directory.Exists(folderPath))
+            {
                 Directory.CreateDirectory(folderPath);
             }
         }
 
-
-        public bool PathInfoExists() {
+        public bool PathInfoExists()
+        {
             string path = GetPathToFile($"paths/{CurrentChapterDebugName}.txt");
             return File.Exists(path);
         }
-        public PathInfo GetPathInputInfo() {
-            Log($"[GetPathInputInfo] Fetching path info for chapter '{CurrentChapterDebugName}'");
+
+        public PathInfo GetPathInputInfo()
+        {
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetPathInputInfo)}",
+                $"Fetching path info for chapter '{CurrentChapterDebugName}'"
+            );
 
             string path = GetPathToFile($"paths/{CurrentChapterDebugName}.txt");
-            Log($"\tSearching for path '{path}'");
+            Logger.Log(
+                LogLevel.Debug,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetPathInputInfo)}",
+                $"\tSearching for path '{path}'"
+            );
 
-            if (File.Exists(path)) { //Parse File
-                Log($"\tFound file, parsing...");
+            if (File.Exists(path))
+            { //Parse File
+                Logger.Log(
+                    LogLevel.Debug,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetPathInputInfo)}",
+                    "\tFound file, parsing..."
+                );
                 string content = File.ReadAllText(path);
 
-                try {
-                    return PathInfo.ParseString(content, Log);
-                } catch (Exception) {
-                    Log($"\tCouldn't read old path info, created new PathInfo. Old path info content:\n{content}");
-                    PathInfo toRet = new PathInfo() { };
+                try
+                {
+                    return PathInfo.ParseString(content);
+                }
+                catch (Exception)
+                {
+                    Logger.Log(
+                        LogLevel.Error,
+                        $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetPathInputInfo)}",
+                        $"\tCouldn't read old path info, created new PathInfo. Old path info content:\n{content}"
+                    );
+                    PathInfo toRet = new();
                     return toRet;
                 }
-
-            } else { //Create new
-                Log($"\tDidn't find file, returned null.");
+            }
+            else
+            { //Create new
+                Logger.Log(
+                    LogLevel.Debug,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetPathInputInfo)}",
+                    $"\tDidn't find file, returned null."
+                );
                 return null;
             }
         }
 
-        public ChapterStats GetCurrentChapterStats() {
+        public ChapterStats GetCurrentChapterStats()
+        {
             string path = GetPathToFile($"stats/{CurrentChapterDebugName}.txt");
 
             bool hasEnteredThisSession = ChaptersThisSession.Contains(CurrentChapterDebugName);
             ChaptersThisSession.Add(CurrentChapterDebugName);
-            Log($"[GetCurrentChapterStats] CurrentChapterName: '{CurrentChapterDebugName}', hasEnteredThisSession: '{hasEnteredThisSession}', ChaptersThisSession: '{string.Join(", ", ChaptersThisSession)}'");
+            Logger.Log(
+                LogLevel.Verbose,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetCurrentChapterStats)}",
+                $"CurrentChapterName: '{CurrentChapterDebugName}', hasEnteredThisSession: '{hasEnteredThisSession}', ChaptersThisSession: '{string.Join(", ", ChaptersThisSession)}'"
+            );
 
             ChapterStats toRet;
 
-            if (File.Exists(path)) { //Parse File
+            if (File.Exists(path))
+            { //Parse File
                 string content = File.ReadAllText(path);
                 toRet = ChapterStats.ParseString(content);
                 toRet.ChapterDebugName = CurrentChapterDebugName;
-
-            } else { //Create new
-                toRet = new ChapterStats() {
-                    ChapterDebugName = CurrentChapterDebugName,
-                };
+            }
+            else
+            { //Create new
+                toRet = new ChapterStats() { ChapterDebugName = CurrentChapterDebugName, };
                 toRet.SetCurrentRoom(CurrentRoomName);
             }
 
-            if (!hasEnteredThisSession) {
+            if (!hasEnteredThisSession)
+            {
                 toRet.ResetCurrentSession();
-                Log("Resetting session for GB deaths");
-            } else {
-                Log("Not resetting session for GB deaths");
+                Logger.Log(
+                    LogLevel.Info,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetCurrentChapterStats)}",
+                    "Resetting session for GB deaths"
+                );
+            }
+            else
+            {
+                Logger.Log(
+                    LogLevel.Debug,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(GetCurrentChapterStats)}",
+                    "Not resetting session for GB deaths"
+                );
             }
 
             return toRet;
         }
 
-        public void SaveChapterStats() {
-            if (CurrentChapterStats == null) {
-                Log($"[SaveChapterStats] Aborting saving chapter stats as '{nameof(CurrentChapterStats)}' is null");
+        public void SaveChapterStats()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SaveChapterStats)}",
+                    $"Aborting saving chapter stats as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
 
@@ -558,29 +822,42 @@ namespace Celeste.Mod.ConsistencyTracker {
             CurrentChapterStats.ModState.OverlayVersion = OverlayVersion;
             CurrentChapterStats.ModState.ModVersion = ModVersion;
 
-
             string path = GetPathToFile($"stats/{CurrentChapterDebugName}.txt");
             File.WriteAllText(path, CurrentChapterStats.ToChapterStatsString());
 
             string modStatePath = GetPathToFile($"stats/modState.txt");
 
-            string content = $"{CurrentChapterStats.CurrentRoom}\n{CurrentChapterStats.ChapterDebugName};{CurrentChapterStats.ModState}\n";
+            string content =
+                $"{CurrentChapterStats.CurrentRoom}\n{CurrentChapterStats.ChapterDebugName};{CurrentChapterStats.ModState}\n";
             File.WriteAllText(modStatePath, content);
 
             StatsManager.OutputFormats(CurrentChapterPath, CurrentChapterStats);
         }
 
-        public void CreateChapterSummary(int attemptCount) {
-            Log($"[CreateChapterSummary(attemptCount={attemptCount})] Attempting to create tracker summary");
+        public void CreateChapterSummary(int attemptCount)
+        {
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(CreateChapterSummary)}",
+                $"[attemptCount={attemptCount}] Attempting to create tracker summary"
+            );
 
             bool hasPathInfo = PathInfoExists();
 
             string relativeOutPath = $"summaries/{CurrentChapterDebugName}.txt";
             string outPath = GetPathToFile(relativeOutPath);
 
-            if (!hasPathInfo) {
-                Log($"Called CreateChapterSummary without chapter path info. Please create a path before using this feature");
-                File.WriteAllText(outPath, "No path info was found for the current chapter.\nPlease create a path before using the summary feature");
+            if (!hasPathInfo)
+            {
+                Logger.Log(
+                    LogLevel.Info,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(CreateChapterSummary)}",
+                    $"Called CreateChapterSummary without chapter path info. Please create a path before using this feature"
+                );
+                File.WriteAllText(
+                    outPath,
+                    "No path info was found for the current chapter.\nPlease create a path before using the summary feature"
+                );
                 return;
             }
 
@@ -591,51 +868,86 @@ namespace Celeste.Mod.ConsistencyTracker {
 
         #region Stats Data Control
 
-        public void WipeChapterData() {
-            if (CurrentChapterStats == null) {
-                Log($"[WipeChapterData] Aborting wiping chapter data as '{nameof(CurrentChapterStats)}' is null");
+        public void WipeChapterData()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(WipeChapterData)}",
+                    $"Aborting wiping chapter data as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
 
-            Log($"[WipeChapterData] Wiping death data for chapter '{CurrentChapterDebugName}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(WipeChapterData)}",
+                $"Wiping death data for chapter '{CurrentChapterDebugName}'"
+            );
 
             RoomStats currentRoom = CurrentChapterStats.CurrentRoom;
-            List<string> toRemove = new List<string>();
+            List<string> toRemove = new();
 
-            foreach (string debugName in CurrentChapterStats.Rooms.Keys) {
-                if (debugName == currentRoom.DebugRoomName) continue;
+            foreach (string debugName in CurrentChapterStats.Rooms.Keys)
+            {
+                if (debugName == currentRoom.DebugRoomName)
+                    continue;
                 toRemove.Add(debugName);
             }
 
-            foreach (string debugName in toRemove) {
+            foreach (string debugName in toRemove)
+            {
                 CurrentChapterStats.Rooms.Remove(debugName);
             }
 
             WipeRoomData();
         }
 
-        public void RemoveRoomGoldenBerryDeaths() {
-            if (CurrentChapterStats == null) {
-                Log($"[WipeChapterGoldenBerryDeaths] Aborting wiping room golden berry deaths as '{nameof(CurrentChapterStats)}' is null");
+        public void RemoveRoomGoldenBerryDeaths()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveRoomGoldenBerryDeaths)}",
+                    $"Aborting wiping room golden berry deaths as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
 
-            Log($"[WipeChapterGoldenBerryDeaths] Wiping golden berry death data for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveRoomGoldenBerryDeaths)}",
+                $"Wiping golden berry death data for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'"
+            );
 
             CurrentChapterStats.CurrentRoom.GoldenBerryDeaths = 0;
             CurrentChapterStats.CurrentRoom.GoldenBerryDeathsSession = 0;
 
             SaveChapterStats();
         }
-        public void WipeChapterGoldenBerryDeaths() {
-            if (CurrentChapterStats == null) {
-                Log($"[WipeChapterGoldenBerryDeaths] Aborting wiping chapter golden berry deaths as '{nameof(CurrentChapterStats)}' is null");
+
+        public void WipeChapterGoldenBerryDeaths()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(WipeChapterGoldenBerryDeaths)}",
+                    $"Aborting wiping chapter golden berry deaths as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
 
-            Log($"[WipeChapterGoldenBerryDeaths] Wiping golden berry death data for chapter '{CurrentChapterDebugName}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(WipeChapterGoldenBerryDeaths)}",
+                $"Wiping golden berry death data for chapter '{CurrentChapterDebugName}'"
+            );
 
-            foreach (string debugName in CurrentChapterStats.Rooms.Keys) {
+            foreach (string debugName in CurrentChapterStats.Rooms.Keys)
+            {
                 CurrentChapterStats.Rooms[debugName].GoldenBerryDeaths = 0;
                 CurrentChapterStats.Rooms[debugName].GoldenBerryDeathsSession = 0;
             }
@@ -643,39 +955,71 @@ namespace Celeste.Mod.ConsistencyTracker {
             SaveChapterStats();
         }
 
-        
-
-        public void WipeRoomData() {
-            if (CurrentChapterStats == null) {
-                Log($"[WipeRoomData] Aborting wiping room data as '{nameof(CurrentChapterStats)}' is null");
+        public void WipeRoomData()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(WipeRoomData)}",
+                    $"Aborting wiping room data as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
-            Log($"[WipeRoomData] Wiping room data for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(WipeRoomData)}",
+                $"Wiping room data for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'"
+            );
 
             CurrentChapterStats.CurrentRoom.PreviousAttempts.Clear();
             SaveChapterStats();
         }
 
-        public void RemoveLastDeathStreak() {
-            if (CurrentChapterStats == null) {
-                Log($"[RemoveLastDeathStreak] Aborting removing death streak as '{nameof(CurrentChapterStats)}' is null");
+        public void RemoveLastDeathStreak()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveLastDeathStreak)}",
+                    $"Aborting removing death streak as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
-            Log($"[RemoveLastDeathStreak] Removing death streak for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveLastDeathStreak)}",
+                $"Removing death streak for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'"
+            );
 
-            while (CurrentChapterStats.CurrentRoom.PreviousAttempts.Count > 0 && CurrentChapterStats.CurrentRoom.LastAttempt == false) {
+            while (
+                CurrentChapterStats.CurrentRoom.PreviousAttempts.Count > 0
+                && CurrentChapterStats.CurrentRoom.LastAttempt == false
+            )
+            {
                 CurrentChapterStats.CurrentRoom.RemoveLastAttempt();
             }
 
             SaveChapterStats();
         }
 
-        public void RemoveLastAttempt() {
-            if (CurrentChapterStats == null) {
-                Log($"[RemoveLastAttempt] Aborting removing death streak as '{nameof(CurrentChapterStats)}' is null");
+        public void RemoveLastAttempt()
+        {
+            if (CurrentChapterStats == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveLastAttempt)}",
+                    $"Aborting removing death streak as '{nameof(CurrentChapterStats)}' is null"
+                );
                 return;
             }
-            Log($"[RemoveLastAttempt] Removing last attempt for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveLastAttempt)}",
+                $"Removing last attempt for room '{CurrentChapterStats.CurrentRoom.DebugRoomName}'"
+            );
 
             CurrentChapterStats.CurrentRoom.RemoveLastAttempt();
             SaveChapterStats();
@@ -685,84 +1029,84 @@ namespace Celeste.Mod.ConsistencyTracker {
 
         #region Path Management
 
-        public void SaveRecordedRoomPath() {
-            Log($"[{nameof(SaveRecordedRoomPath)}] Saving recorded path...");
+        public void SaveRecordedRoomPath()
+        {
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SaveRecordedRoomPath)}",
+                $"Saving recorded path..."
+            );
             DisabledInRoomName = CurrentRoomName;
             CurrentChapterPath = Path.ToPathInfo();
-            Log($"[{nameof(SaveRecordedRoomPath)}] Recorded path:\n{CurrentChapterPath.ToString()}");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SaveRecordedRoomPath)}",
+                $"Recorded path:\n{CurrentChapterPath}"
+            );
             SaveRoomPath();
         }
-        public void SaveRoomPath() {
+
+        public void SaveRoomPath()
+        {
             string relativeOutPath = $"paths/{CurrentChapterDebugName}.txt";
             string outPath = GetPathToFile(relativeOutPath);
             File.WriteAllText(outPath, CurrentChapterPath.ToString());
-            Log($"Wrote path data to '{relativeOutPath}'");
+            Logger.Log(
+                LogLevel.Info,
+                $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(SaveRoomPath)}",
+                $"Wrote path data to '{relativeOutPath}'"
+            );
         }
 
-        public void RemoveRoomFromChapter() {
-            if (CurrentChapterPath == null) {
-                Log($"[RemoveRoomFromChapter] CurrentChapterPath was null");
+        public void RemoveRoomFromChapter()
+        {
+            if (CurrentChapterPath == null)
+            {
+                Logger.Log(
+                    LogLevel.Warn,
+                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerModule)}/{nameof(RemoveRoomFromChapter)}",
+                    $"CurrentChapterPath was null"
+                );
                 return;
             }
 
             bool foundRoom = false;
-            foreach (CheckpointInfo cpInfo in CurrentChapterPath.Checkpoints) {
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
-                    if (rInfo.DebugRoomName != CurrentRoomName) continue;
+            foreach (CheckpointInfo cpInfo in CurrentChapterPath.Checkpoints)
+            {
+                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                {
+                    if (rInfo.DebugRoomName != CurrentRoomName)
+                        continue;
 
                     cpInfo.Rooms.Remove(rInfo);
                     foundRoom = true;
                     break;
                 }
 
-                if (foundRoom) break;
+                if (foundRoom)
+                    break;
             }
 
-            if (foundRoom) {
+            if (foundRoom)
+            {
                 SaveRoomPath();
             }
         }
 
         #endregion
 
-        #region Logging
-
-        public void LogInit() {
-            string logFileMax = GetPathToFile($"logs/log_old{LOG_FILE_COUNT}.txt");
-            if (File.Exists(logFileMax)) {
-                File.Delete(logFileMax);
-            }
-
-            for (int i = LOG_FILE_COUNT - 1; i >= 1; i--) {
-                string logFilePath = GetPathToFile($"logs/log_old{i}.txt");
-                if (File.Exists(logFilePath)) {
-                    string logFileNewPath = GetPathToFile($"logs/log_old{i+1}.txt");
-                    File.Move(logFilePath, logFileNewPath);
-                }
-            }
-
-            string lastFile = GetPathToFile("logs/log.txt");
-            if (File.Exists(lastFile)) {
-                string logFileNewPath = GetPathToFile($"logs/log_old{1}.txt");
-                File.Move(lastFile, logFileNewPath);
-            }
-        }
-        public void Log(string log) {
-            string path = GetPathToFile("logs/log.txt");
-            File.AppendAllText(path, log+"\n");
-        }
-
-        #endregion
-
         #region Util
-        public static string SanitizeSIDForDialog(string sid) {
+        public static string SanitizeSIDForDialog(string sid)
+        {
             string bsSuffix = "_pqeijpvqie";
             string dialogCleaned = Dialog.Get($"{sid}{bsSuffix}");
             return dialogCleaned.Substring(1, sid.Length);
         }
 
-        public void InsertCheckpointIntoPath(Checkpoint cp, string roomName) {
-            if (roomName == null) {
+        public void InsertCheckpointIntoPath(Checkpoint cp, string roomName)
+        {
+            if (roomName == null)
+            {
                 Path.AddCheckpoint(cp, PathRecorder.DefaultCheckpointName);
                 return;
             }
@@ -772,19 +1116,29 @@ namespace Celeste.Mod.ConsistencyTracker {
             string cpName = Dialog.Get(cpDialogName);
             //Log($"[Dialog Testing] Dialog.Get says: {cpName}");
 
-            if (cpName.Length+1 >= cpDialogName.Length && cpName.Substring(1, cpDialogName.Length) == cpDialogName) cpName = null;
+            if (
+                cpName.Length + 1 >= cpDialogName.Length
+                && cpName.Substring(1, cpDialogName.Length) == cpDialogName
+            )
+                cpName = null;
 
             Path.AddCheckpoint(cp, cpName);
         }
         #endregion
 
 
-        public class ConsistencyTrackerSettings : EverestModuleSettings {
+        public class ConsistencyTrackerSettings : EverestModuleSettings
+        {
             public bool Enabled { get; set; } = true;
 
-            public bool PauseDeathTracking {
+            public OverlayPosition OverlayPosition { get; set; } = OverlayPosition.Disabled;
+            public int OverlayOpacity { get; set; } = 8;
+
+            public bool PauseDeathTracking
+            {
                 get => _PauseDeathTracking;
-                set {
+                set
+                {
                     _PauseDeathTracking = value;
                     Instance.SaveChapterStats();
                 }
@@ -792,128 +1146,179 @@ namespace Celeste.Mod.ConsistencyTracker {
             private bool _PauseDeathTracking { get; set; } = false;
 
             public bool OnlyTrackWithGoldenBerry { get; set; } = false;
-            public void CreateOnlyTrackWithGoldenBerryEntry(TextMenu menu, bool inGame) {
-                menu.Add(new TextMenu.OnOff("Only Track Deaths With Golden Berry", this.OnlyTrackWithGoldenBerry) {
-                    OnValueChange = v => {
-                        this.OnlyTrackWithGoldenBerry = v;
+
+            public void CreateOnlyTrackWithGoldenBerryEntry(TextMenu menu, bool inGame)
+            {
+                menu.Add(
+                    new TextMenu.OnOff(
+                        "Only Track Deaths With Golden Berry",
+                        OnlyTrackWithGoldenBerry
+                    )
+                    {
+                        OnValueChange = v =>
+                        {
+                            OnlyTrackWithGoldenBerry = v;
+                        }
                     }
-                });
+                );
             }
 
             public bool RecordPath { get; set; } = false;
-            public void CreateRecordPathEntry(TextMenu menu, bool inGame) {
-                if (!inGame) return;
 
-                TextMenuExt.SubMenu subMenu = new TextMenuExt.SubMenu("Path Recording", false);
+            public void CreateRecordPathEntry(TextMenu menu, bool inGame)
+            {
+                if (!inGame)
+                    return;
+
+                TextMenuExt.SubMenu subMenu = new("Path Recording", false);
 
                 subMenu.Add(new TextMenu.SubHeader("!!!Existing paths will be overwritten!!!"));
-                subMenu.Add(new TextMenu.OnOff("Record Path", Instance.DoRecordPath) {
-                    OnValueChange = v => {
-                        if (v)
-                            Instance.Log($"Recording chapter path...");
-                        else
-                            Instance.Log($"Stopped recording path. Outputting info...");
+                subMenu.Add(
+                    new TextMenu.OnOff("Record Path", Instance.DoRecordPath)
+                    {
+                        OnValueChange = v =>
+                        {
+                            if (v)
+                                Logger.Log(
+                                    LogLevel.Info,
+                                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerSettings)}/{nameof(CreateRecordPathEntry)}",
+                                    $"Recording chapter path..."
+                                );
+                            else
+                                Logger.Log(
+                                    LogLevel.Info,
+                                    $"{nameof(ConsistencyTracker)}/{nameof(ConsistencyTrackerSettings)}/{nameof(CreateRecordPathEntry)}",
+                                    $"Stopped recording path. Outputting info..."
+                                );
 
-                        this.RecordPath = v;
-                        Instance.DoRecordPath = v;
-                        Instance.SaveChapterStats();
+                            this.RecordPath = v;
+                            Instance.DoRecordPath = v;
+                            Instance.SaveChapterStats();
+                        }
                     }
-                });
+                );
 
-                subMenu.Add(new TextMenu.SubHeader("Editing the path requires a reload of the Overlay"));
-                subMenu.Add(new TextMenu.Button("Remove Current Room From Path") {
-                    OnPressed = Instance.RemoveRoomFromChapter
-                });
+                subMenu.Add(
+                    new TextMenu.SubHeader("Editing the path requires a reload of the Overlay")
+                );
+                subMenu.Add(
+                    new TextMenu.Button("Remove Current Room From Path")
+                    {
+                        OnPressed = Instance.RemoveRoomFromChapter
+                    }
+                );
 
                 menu.Add(subMenu);
             }
-
 
             public bool WipeChapter { get; set; } = false;
-            public void CreateWipeChapterEntry(TextMenu menu, bool inGame) {
-                if (!inGame) return;
 
-                TextMenuExt.SubMenu subMenu = new TextMenuExt.SubMenu("!!Data Wipe!!", false);
+            public void CreateWipeChapterEntry(TextMenu menu, bool inGame)
+            {
+                if (!inGame)
+                    return;
+
+                TextMenuExt.SubMenu subMenu = new("!!Data Wipe!!", false);
                 subMenu.Add(new TextMenu.SubHeader("These actions cannot be reverted!"));
 
-
                 subMenu.Add(new TextMenu.SubHeader("Current Room"));
-                subMenu.Add(new TextMenu.Button("Remove Last Attempt") {
-                    OnPressed = () => {
-                        Instance.RemoveLastAttempt();
+                subMenu.Add(
+                    new TextMenu.Button("Remove Last Attempt")
+                    {
+                        OnPressed = Instance.RemoveLastAttempt
                     }
-                });
+                );
 
-                subMenu.Add(new TextMenu.Button("Remove Last Death Streak") {
-                    OnPressed = () => {
-                        Instance.RemoveLastDeathStreak();
+                subMenu.Add(
+                    new TextMenu.Button("Remove Last Death Streak")
+                    {
+                        OnPressed = Instance.RemoveLastDeathStreak
                     }
-                });
+                );
 
-                subMenu.Add(new TextMenu.Button("Remove All Attempts") {
-                    OnPressed = () => {
-                        Instance.WipeRoomData();
+                subMenu.Add(
+                    new TextMenu.Button("Remove All Attempts") { OnPressed = Instance.WipeRoomData }
+                );
+
+                subMenu.Add(
+                    new TextMenu.Button("Remove Golden Berry Deaths")
+                    {
+                        OnPressed = Instance.RemoveRoomGoldenBerryDeaths
                     }
-                });
-
-                subMenu.Add(new TextMenu.Button("Remove Golden Berry Deaths") {
-                    OnPressed = () => {
-                        Instance.RemoveRoomGoldenBerryDeaths();
-                    }
-                });
-
+                );
 
                 subMenu.Add(new TextMenu.SubHeader("Current Chapter"));
-                subMenu.Add(new TextMenu.Button("Reset All Attempts") {
-                    OnPressed = () => {
-                        Instance.WipeChapterData();
+                subMenu.Add(
+                    new TextMenu.Button("Reset All Attempts")
+                    {
+                        OnPressed = Instance.WipeChapterData
                     }
-                });
+                );
 
-                subMenu.Add(new TextMenu.Button("Reset All Golden Berry Deaths") {
-                    OnPressed = () => {
-                        Instance.WipeChapterGoldenBerryDeaths();
+                subMenu.Add(
+                    new TextMenu.Button("Reset All Golden Berry Deaths")
+                    {
+                        OnPressed = Instance.WipeChapterGoldenBerryDeaths
                     }
-                });
-
+                );
 
                 menu.Add(subMenu);
             }
-
 
             public bool CreateSummary { get; set; } = false;
             public int SummarySelectedAttemptCount { get; set; } = 20;
-            public void CreateCreateSummaryEntry(TextMenu menu, bool inGame) {
-                if (!inGame) return;
 
-                TextMenuExt.SubMenu subMenu = new TextMenuExt.SubMenu("Tracker Summary", false);
-                subMenu.Add(new TextMenu.SubHeader("Outputs some cool data of the current chapter in a readable .txt format"));
+            public void CreateCreateSummaryEntry(TextMenu menu, bool inGame)
+            {
+                if (!inGame)
+                    return;
 
+                TextMenuExt.SubMenu subMenu = new("Tracker Summary", false);
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "Outputs some cool data of the current chapter in a readable .txt format"
+                    )
+                );
 
-                subMenu.Add(new TextMenu.SubHeader("When calculating the consistency stats, only the last X attempts will be counted"));
-                List<KeyValuePair<int, string>> AttemptCounts = new List<KeyValuePair<int, string>>() {
-                    new KeyValuePair<int, string>(5, "5"),
-                    new KeyValuePair<int, string>(10, "10"),
-                    new KeyValuePair<int, string>(20, "20"),
-                    new KeyValuePair<int, string>(100, "100"),
-                };
-                subMenu.Add(new TextMenuExt.EnumerableSlider<int>("Summary Over X Attempts", AttemptCounts, SummarySelectedAttemptCount) {
-                    OnValueChange = (value) => {
-                        SummarySelectedAttemptCount = value;
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "When calculating the consistency stats, only the last X attempts will be counted"
+                    )
+                );
+                List<KeyValuePair<int, string>> AttemptCounts =
+                    new()
+                    {
+                        new KeyValuePair<int, string>(5, "5"),
+                        new KeyValuePair<int, string>(10, "10"),
+                        new KeyValuePair<int, string>(20, "20"),
+                        new KeyValuePair<int, string>(100, "100"),
+                    };
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int>(
+                        "Summary Over X Attempts",
+                        AttemptCounts,
+                        SummarySelectedAttemptCount
+                    )
+                    {
+                        OnValueChange = (value) =>
+                        {
+                            SummarySelectedAttemptCount = value;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.Button("Create Chapter Summary") {
-                    OnPressed = () => {
-                        Instance.CreateChapterSummary(SummarySelectedAttemptCount);
+                subMenu.Add(
+                    new TextMenu.Button("Create Chapter Summary")
+                    {
+                        OnPressed = () =>
+                        {
+                            Instance.CreateChapterSummary(SummarySelectedAttemptCount);
+                        }
                     }
-                });
+                );
 
                 menu.Add(subMenu);
             }
-
-
 
             //Live Data Settings:
             //- Percentages digit cutoff (default: 2)
@@ -926,7 +1331,8 @@ namespace Celeste.Mod.ConsistencyTracker {
 
             //Types: 1 -> EH-3 | 2 -> Event-Horizon-3
             [SettingIgnore]
-            public RoomNameDisplayType LiveDataRoomNameDisplayType { get; set; } = RoomNameDisplayType.AbbreviationAndRoomNumberInCP;
+            public RoomNameDisplayType LiveDataRoomNameDisplayType { get; set; } =
+                RoomNameDisplayType.AbbreviationAndRoomNumberInCP;
 
             //Types: 1 -> EH-3 | 2 -> Event-Horizon-3
             [SettingIgnore]
@@ -938,90 +1344,167 @@ namespace Celeste.Mod.ConsistencyTracker {
             [SettingIgnore]
             public bool LiveDataIgnoreUnplayedRooms { get; set; } = false;
 
-            public void CreateLiveDataEntry(TextMenu menu, bool inGame) {
-                TextMenuExt.SubMenu subMenu = new TextMenuExt.SubMenu("Live Data Settings", false);
+            public void CreateLiveDataEntry(TextMenu menu, bool inGame)
+            {
+                TextMenuExt.SubMenu subMenu = new("Live Data Settings", false);
 
-
-                subMenu.Add(new TextMenu.SubHeader("Floating point numbers will be rounded to this decimal"));
-                List<KeyValuePair<int, string>> DigitCounts = new List<KeyValuePair<int, string>>() {
-                    new KeyValuePair<int, string>(0, "0"),
-                    new KeyValuePair<int, string>(1, "1"),
-                    new KeyValuePair<int, string>(2, "2"),
-                    new KeyValuePair<int, string>(3, "3"),
-                    new KeyValuePair<int, string>(4, "4"),
-                    new KeyValuePair<int, string>(5, "5"),
-                };
-                subMenu.Add(new TextMenuExt.EnumerableSlider<int>("Max. Decimal Places", DigitCounts, LiveDataDecimalPlaces) {
-                    OnValueChange = (value) => {
-                        LiveDataDecimalPlaces = value;
+                subMenu.Add(
+                    new TextMenu.SubHeader("Floating point numbers will be rounded to this decimal")
+                );
+                List<KeyValuePair<int, string>> DigitCounts =
+                    new()
+                    {
+                        new KeyValuePair<int, string>(0, "0"),
+                        new KeyValuePair<int, string>(1, "1"),
+                        new KeyValuePair<int, string>(2, "2"),
+                        new KeyValuePair<int, string>(3, "3"),
+                        new KeyValuePair<int, string>(4, "4"),
+                        new KeyValuePair<int, string>(5, "5"),
+                    };
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int>(
+                        "Max. Decimal Places",
+                        DigitCounts,
+                        LiveDataDecimalPlaces
+                    )
+                    {
+                        OnValueChange = (value) =>
+                        {
+                            LiveDataDecimalPlaces = value;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.SubHeader("When calculating room consistency stats, only the last X attempts in each room will be counted"));
-                List<KeyValuePair<int, string>> AttemptCounts = new List<KeyValuePair<int, string>>() {
-                    new KeyValuePair<int, string>(5, "5"),
-                    new KeyValuePair<int, string>(10, "10"),
-                    new KeyValuePair<int, string>(20, "20"),
-                    new KeyValuePair<int, string>(100, "100"),
-                };
-                subMenu.Add(new TextMenuExt.EnumerableSlider<int>("Consider Last X Attempts", AttemptCounts, LiveDataSelectedAttemptCount) {
-                    OnValueChange = (value) => {
-                        LiveDataSelectedAttemptCount = value;
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "When calculating room consistency stats, only the last X attempts in each room will be counted"
+                    )
+                );
+                List<KeyValuePair<int, string>> AttemptCounts =
+                    new()
+                    {
+                        new KeyValuePair<int, string>(5, "5"),
+                        new KeyValuePair<int, string>(10, "10"),
+                        new KeyValuePair<int, string>(20, "20"),
+                        new KeyValuePair<int, string>(100, "100"),
+                    };
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int>(
+                        "Consider Last X Attempts",
+                        AttemptCounts,
+                        LiveDataSelectedAttemptCount
+                    )
+                    {
+                        OnValueChange = (value) =>
+                        {
+                            LiveDataSelectedAttemptCount = value;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.SubHeader("Whether you want checkpoint names to be full or abbreviated in the room name"));
-                List<KeyValuePair<int, string>> PBNameTypes = new List<KeyValuePair<int, string>>() {
-                    new KeyValuePair<int, string>((int)RoomNameDisplayType.AbbreviationAndRoomNumberInCP, "EH-3"),
-                    new KeyValuePair<int, string>((int)RoomNameDisplayType.FullNameAndRoomNumberInCP, "Event-Horizon-3"),
-                };
-                subMenu.Add(new TextMenuExt.EnumerableSlider<int>("Room Name Format", PBNameTypes, (int)LiveDataRoomNameDisplayType) {
-                    OnValueChange = (value) => {
-                        LiveDataRoomNameDisplayType = (RoomNameDisplayType)value;
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "Whether you want checkpoint names to be full or abbreviated in the room name"
+                    )
+                );
+                List<KeyValuePair<int, string>> PBNameTypes =
+                    new()
+                    {
+                        new KeyValuePair<int, string>(
+                            (int)RoomNameDisplayType.AbbreviationAndRoomNumberInCP,
+                            "EH-3"
+                        ),
+                        new KeyValuePair<int, string>(
+                            (int)RoomNameDisplayType.FullNameAndRoomNumberInCP,
+                            "Event-Horizon-3"
+                        ),
+                    };
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int>(
+                        "Room Name Format",
+                        PBNameTypes,
+                        (int)LiveDataRoomNameDisplayType
+                    )
+                    {
+                        OnValueChange = (value) =>
+                        {
+                            LiveDataRoomNameDisplayType = (RoomNameDisplayType)value;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.SubHeader("Output format for lists. Plain is easily readable, JSON is for programming purposes"));
-                List<KeyValuePair<int, string>> ListTypes = new List<KeyValuePair<int, string>>() {
-                    new KeyValuePair<int, string>((int)ListFormat.Plain, "Plain"),
-                    new KeyValuePair<int, string>((int)ListFormat.Json, "JSON"),
-                };
-                subMenu.Add(new TextMenuExt.EnumerableSlider<int>("List Output Format", ListTypes, (int)LiveDataListOutputFormat) {
-                    OnValueChange = (value) => {
-                        LiveDataListOutputFormat = (ListFormat)value;
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "Output format for lists. Plain is easily readable, JSON is for programming purposes"
+                    )
+                );
+                List<KeyValuePair<int, string>> ListTypes =
+                    new()
+                    {
+                        new KeyValuePair<int, string>((int)ListFormat.Plain, "Plain"),
+                        new KeyValuePair<int, string>((int)ListFormat.Json, "JSON"),
+                    };
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int>(
+                        "List Output Format",
+                        ListTypes,
+                        (int)LiveDataListOutputFormat
+                    )
+                    {
+                        OnValueChange = (value) =>
+                        {
+                            LiveDataListOutputFormat = (ListFormat)value;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.SubHeader("If a format depends on path information and no path is set, the format will be blanked out"));
-                subMenu.Add(new TextMenu.OnOff("Hide Formats When No Path", LiveDataHideFormatsWithoutPath) {
-                    OnValueChange = v => {
-                        LiveDataHideFormatsWithoutPath = v;
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "If a format depends on path information and no path is set, the format will be blanked out"
+                    )
+                );
+                subMenu.Add(
+                    new TextMenu.OnOff("Hide Formats When No Path", LiveDataHideFormatsWithoutPath)
+                    {
+                        OnValueChange = v =>
+                        {
+                            LiveDataHideFormatsWithoutPath = v;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.SubHeader("For chance calculation unplayed rooms count as 0% success rate. Toggle this on to ignore unplayed rooms"));
-                subMenu.Add(new TextMenu.OnOff("Ignore Unplayed Rooms", LiveDataIgnoreUnplayedRooms) {
-                    OnValueChange = v => {
-                        LiveDataIgnoreUnplayedRooms = v;
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        "For chance calculation unplayed rooms count as 0% success rate. Toggle this on to ignore unplayed rooms"
+                    )
+                );
+                subMenu.Add(
+                    new TextMenu.OnOff("Ignore Unplayed Rooms", LiveDataIgnoreUnplayedRooms)
+                    {
+                        OnValueChange = v =>
+                        {
+                            LiveDataIgnoreUnplayedRooms = v;
+                        }
                     }
-                });
+                );
 
-
-                subMenu.Add(new TextMenu.SubHeader($"After editing '{StatManager.BaseFolder}/{StatManager.FormatFileName}' use this to update the live data format"));
-                subMenu.Add(new TextMenu.Button("Reload format file") {
-                    OnPressed = () => {
-                        Instance.StatsManager.LoadFormats();
+                subMenu.Add(
+                    new TextMenu.SubHeader(
+                        $"After editing '{StatManager.BaseFolder}/{StatManager.FormatFileName}' use this to update the live data format"
+                    )
+                );
+                subMenu.Add(
+                    new TextMenu.Button("Reload format file")
+                    {
+                        OnPressed = () =>
+                        {
+                            Instance.StatsManager.LoadFormats();
+                        }
                     }
-                });
+                );
 
                 menu.Add(subMenu);
             }
-
         }
     }
 }

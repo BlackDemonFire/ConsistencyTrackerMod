@@ -197,4 +197,3 @@ Here is a list of all available placeholders:
     }
 }
 ```
-
