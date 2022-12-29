@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.AccessControl;
 using Celeste.Mod.ConsistencyTracker.Enums;
 using Celeste.Mod.ConsistencyTracker.Models;
+using Celeste.Mod.ConsistencyTracker.Stats;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -30,6 +30,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
 
         public RoomOverlay()
         {
+            ConsistencyTrackerModule.Instance.Log($"[{nameof(RoomOverlay)}::{nameof(RoomOverlay)}] Building RoomOverlay Object");
             Depth = -101;
             Tag = Tags.HUD | Tags.Global | Tags.PauseUpdate | Tags.TransitionUpdate;
 
@@ -45,10 +46,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             currentCheckpoint = null;
             otherRoomCount = 0;
 
-            foreach (
-                var checkpoint in ConsistencyTrackerModule.Instance.CurrentChapterPath.Checkpoints
-            )
-            {
+            foreach (var checkpoint in ConsistencyTrackerModule.Instance.GetPathInputInfo().Checkpoints) {
                 var roomIndex = checkpoint.Rooms.FindIndex(r => r.DebugRoomName == debugRoomName);
                 if (roomIndex >= 0)
                 {
@@ -70,23 +68,19 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             var createRooms = roomRectangles == null;
             if (
                 ConsistencyTrackerModule.Instance.CurrentChapterStats != null
-                && ConsistencyTrackerModule.Instance.CurrentChapterPath != null
+                && ConsistencyTrackerModule.Instance.GetPathInputInfo() != null
                 && createRooms
             )
             {
                 roomRectangles = new List<RoomRectangle>();
                 foreach (
-                    var checkpoint in ConsistencyTrackerModule
-                        .Instance
-                        .CurrentChapterPath
+                    var checkpoint in ConsistencyTrackerModule.Instance.GetPathInputInfo()
                         .Checkpoints
                 )
                 {
                     foreach (var room in checkpoint.Rooms)
                     {
-                        var stats = ConsistencyTrackerModule.Instance.CurrentChapterStats.GetRoom(
-                            room.DebugRoomName
-                        );
+                        var stats = ConsistencyTrackerModule.Instance.CurrentChapterStats.GetRoom(room.DebugRoomName);
                         var rect = new RoomRectangle(checkpoint, room, stats);
                         roomRectangles.Add(rect);
                         Add(rect);
@@ -94,10 +88,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 }
 
                 checkpointMarkers = Enumerable
-                    .Range(
-                        0,
-                        ConsistencyTrackerModule.Instance.CurrentChapterPath.Checkpoints.Count
-                    )
+                    .Range(0, ConsistencyTrackerModule.Instance.GetPathInputInfo().Checkpoints.Count)
                     .ToArray();
             }
 
@@ -197,7 +188,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 return;
 
             // try to get info about the path
-            var totalRooms = ConsistencyTrackerModule.Instance.CurrentChapterPath.Checkpoints.Sum(
+            var totalRooms = ConsistencyTrackerModule.Instance.GetPathInputInfo().Checkpoints.Sum(
                 c => c.RoomCount
             );
             if (
@@ -298,18 +289,24 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             public override void Render()
             {
                 base.Render();
-                var chapterStats = ConsistencyTrackerModule.Instance?.CurrentChapterPath;
+                ConsistencyTrackerModule.Instance.Log("[RoomName::Render] Rendering the RoomName");
+                var chapterStats = ConsistencyTrackerModule.Instance.CurrentChapterPath;
+                ConsistencyTrackerModule.Instance.Log($"[RoomName::Render] {chapterStats}");
                 var room = chapterStats?.CurrentRoom;
                 if (room == null)
+                {
+                    ConsistencyTrackerModule.Instance.Log("[RoomName::Render] Current room is null and therefor cannot be rendered.");
                     return;
+                }
                 var name =
                     $"{room.GetFormattedRoomName(RoomNameDisplayType.AbbreviationAndRoomNumberInCP)}";
+                ConsistencyTrackerModule.Instance.Log($"[RoomName::Render] RoomName is {name}");
 
-                float scale = 2f;
-                float alpha = 1f;
-                PixelFont font = Dialog.Languages["english"].Font;
-                float fontFaceSize = Dialog.Languages["english"].FontFaceSize;
-                Color color = Color.White * alpha;
+                var scale = 2f;
+                var alpha = 1f;
+                var font = Dialog.Languages["english"].Font;
+                var fontFaceSize = Dialog.Languages["english"].FontFaceSize;
+                var color = Color.White * alpha;
                 font.DrawOutline(
                     fontFaceSize,
                     name,

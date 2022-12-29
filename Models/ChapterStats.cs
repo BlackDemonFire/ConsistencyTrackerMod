@@ -135,11 +135,11 @@ namespace Celeste.Mod.ConsistencyTracker.Models
                 }
             }
 
-            foreach (CheckpointInfo cpInfo in info.Checkpoints)
+            foreach (var cpInfo in info.Checkpoints)
             {
-                int checkpointDeaths = 0;
+                var checkpointDeaths = 0;
 
-                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                foreach (var rInfo in cpInfo.Rooms)
                 {
                     if (!Rooms.ContainsKey(rInfo.DebugRoomName))
                         continue; //Skip rooms the player has not yet visited.
@@ -148,14 +148,11 @@ namespace Celeste.Mod.ConsistencyTracker.Models
                     checkpointDeaths += rStats.GoldenBerryDeaths;
                 }
 
-                string percentStr = (checkpointDeaths / (double)chapterDeaths).ToString(
-                    "P2",
-                    CultureInfo.InvariantCulture
-                );
+                var percentStr = (checkpointDeaths / (double)chapterDeaths).ToString("P2", CultureInfo.InvariantCulture);
                 sb.AppendLine($"{cpInfo.Name}: {checkpointDeaths} ({percentStr})");
 
                 int roomNumber = 0;
-                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                foreach (var rInfo in cpInfo.Rooms)
                 {
                     roomNumber++;
 
@@ -245,36 +242,28 @@ namespace Celeste.Mod.ConsistencyTracker.Models
                         string rPercentStr = rStats
                             .AverageSuccessOverN(attemptCount)
                             .ToString("P2", CultureInfo.InvariantCulture);
-                        sb.AppendLine(
-                            $"\t{cpInfo.Abbreviation}-{rStats.RoomNumber}: {rPercentStr} ({rStats.SuccessesOverN(attemptCount)} / {rStats.AttemptsOverN(attemptCount)})"
-                        );
+                        sb.AppendLine($"\t{cpInfo.Abbreviation}-{rStats.RoomNumber}: {rPercentStr} ({rStats.SuccessesOverN(attemptCount)} / {rStats.AttemptsOverN(attemptCount)})");
                     }
                 }
             }
-            string cPercentStr = (chapterSuccessRateSum / chapterRoomCount).ToString(
-                "P2",
-                CultureInfo.InvariantCulture
-            );
-            sb.AppendLine(
-                $"Total Success Rate: {cPercentStr} ({chapterSuccesses} successes / {chapterAttempts} attempts)"
-            );
+            string cPercentStr = (chapterSuccessRateSum / chapterRoomCount).ToString("P2", CultureInfo.InvariantCulture);
+            sb.AppendLine($"Total Success Rate: {cPercentStr} ({chapterSuccesses} successes / {chapterAttempts} attempts)");
 
             sb.AppendLine($"");
 
             sb.AppendLine($"- Choke Rate"); //Choke Rate
-            Dictionary<CheckpointInfo, int> cpChokeRates = new();
-            Dictionary<RoomInfo, int> roomChokeRates = new();
+            var cpChokeRates = new Dictionary<CheckpointInfo, int>();
+            var roomChokeRates = new Dictionary<RoomInfo, int>();
 
             foreach (CheckpointInfo cpInfo in info.Checkpoints)
             {
                 cpChokeRates.Add(cpInfo, 0);
 
-                foreach (RoomInfo rInfo in cpInfo.Rooms)
+                foreach (var rInfo in cpInfo.Rooms)
                 {
                     roomChokeRates.Add(rInfo, 0);
 
-                    if (!Rooms.ContainsKey(rInfo.DebugRoomName))
-                        continue; //Skip rooms the player has not yet visited.
+                    if (!Rooms.ContainsKey(rInfo.DebugRoomName)) continue; //Skip rooms the player has not yet visited.
                     roomChokeRates[rInfo] = Rooms[rInfo.DebugRoomName].GoldenBerryDeaths;
                     cpChokeRates[cpInfo] += Rooms[rInfo.DebugRoomName].GoldenBerryDeaths;
                 }
@@ -475,13 +464,16 @@ namespace Celeste.Mod.ConsistencyTracker.Models
             get => AverageSuccessOverN(ChapterStats.MAX_ATTEMPT_COUNT);
         }
 
-        public int SuccessStreak {
-            get {
+        public int SuccessStreak
+        {
+            get
+            {
                 if (PreviousAttempts.Count == 0) return 0;
 
                 int count = 0;
                 bool success = PreviousAttempts[PreviousAttempts.Count - 1];
-                while (success) {
+                while (success)
+                {
                     count++;
                     if (PreviousAttempts.Count == count) return count;
                     success = PreviousAttempts[PreviousAttempts.Count - (1 + count)];
@@ -603,9 +595,9 @@ namespace Celeste.Mod.ConsistencyTracker.Models
 
             List<string> lines = line.Split(new string[] { ";" }, StringSplitOptions.None).ToList();
             //ChapterStats.LogCallback($"\tlines.Count = {lines.Count}");
-            string name = lines[0];
-            int gbDeaths = 0;
-            int gbDeathsSession = 0;
+            var name = lines[0];
+            var gbDeaths = 0;
+            var gbDeathsSession = 0;
             string attemptListString;
 
             try
@@ -634,14 +626,14 @@ namespace Celeste.Mod.ConsistencyTracker.Models
             //int gbDeaths = int.Parse(lines[1]);
             //string attemptListString = lines[6];
 
-            List<bool> attemptList = new();
+            var attemptList = new List<bool>();
             foreach (string boolStr in attemptListString.Split(new char[] { ',' }))
             {
                 //ChapterStats.LogCallback($"\tIn loop -> {boolStr}");
                 if (boolStr.Trim() == "")
                     continue;
 
-                bool value = bool.Parse(boolStr);
+                var value = bool.Parse(boolStr);
                 attemptList.Add(value);
             }
 

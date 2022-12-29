@@ -42,25 +42,19 @@ namespace Celeste.Mod.ConsistencyTracker.Models
             return string.Join("\n", lines);
         }
 
-        public static PathInfo ParseString(string content)
+        public static PathInfo ParseString(string content, Action<string> log)
         {
-            Logger.Log(
-                LogLevel.Info,
-                nameof(ConsistencyTrackerModule),
-                $"[PathInfo.ParseString] Parsing path info string"
-            );
+            log($"[PathInfo.ParseString] Parsing path info string");
             List<string> lines = content
                 .Trim()
                 .Split(new string[] { "\n" }, StringSplitOptions.None)
                 .ToList();
 
-            PathInfo pathInfo = new PathInfo();
+            var pathInfo = new PathInfo();
 
             foreach (string line in lines)
             {
-                Logger.Log(
-                    LogLevel.Debug,
-                    nameof(ConsistencyTrackerModule),
+                log(
                     $"\tParsing line '{line}'"
                 );
                 pathInfo.Checkpoints.Add(CheckpointInfo.ParseString(line));
