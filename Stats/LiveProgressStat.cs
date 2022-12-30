@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
+namespace Celeste.Mod.ConsistencyTracker.Stats {
     /*
      Stats to implement:
      {chapter:roomCount} - How many rooms on entire path
@@ -16,8 +15,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
 
          */
 
-    public class LiveProgressStat : Stat
-    {
+    public class LiveProgressStat : Stat {
         public static string ChapterRoomCount = "{chapter:roomCount}";
         public static string CheckpointRoomCount = "{checkpoint:roomCount}";
         public static string RunChapterProgressNumber = "{room:roomNumberInChapter}";
@@ -41,10 +39,8 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             PathInfo chapterPath,
             ChapterStats chapterStats,
             string format
-        )
-        {
-            if (chapterPath == null)
-            {
+        ) {
+            if (chapterPath == null) {
                 format = StatManager.MissingPathFormat(format, ChapterRoomCount);
                 format = StatManager.MissingPathFormat(format, CheckpointRoomCount);
                 format = StatManager.MissingPathFormat(format, RunChapterProgressNumber);
@@ -57,8 +53,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             int chapterRoomCount = chapterPath.RoomCount;
             format = format.Replace(ChapterRoomCount, $"{chapterRoomCount}");
 
-            if (chapterPath.CurrentRoom == null)
-            { //Player is not on path
+            if (chapterPath.CurrentRoom == null) { //Player is not on path
                 format = StatManager.NotOnPathFormat(format, CheckpointRoomCount);
                 format = StatManager.NotOnPathFormat(format, RunChapterProgressNumber);
                 format = StatManager.NotOnPathFormat(format, RunCheckpointProgressNumber);
@@ -66,9 +61,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
                 format = StatManager.NotOnPathFormatPercent(format, RunCheckpointProgressPercent);
 
                 return format;
-            }
-            else
-            {
+            } else {
                 int checkpointRoomCount = chapterPath.CurrentRoom.Checkpoint.Rooms.Count;
 
                 int roomNumberInChapter = chapterPath.CurrentRoom.RoomNumberInChapter;
@@ -101,15 +94,13 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             return format;
         }
 
-        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats)
-        {
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
             return null;
         }
 
         //live-progress;Room {room:roomNumberInChapter}/{chapter:roomCount} ({room:chapterProgressPercent})
         // | Room in CP: {room:roomNumberInCheckpoint}/{checkpoint:roomCount} ({room:checkpointProgressPercent})
-        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations()
-        {
+        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
             return new List<KeyValuePair<string, string>>()
             {
                 new KeyValuePair<string, string>(
@@ -136,8 +127,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             };
         }
 
-        public override List<StatFormat> GetStatExamples()
-        {
+        public override List<StatFormat> GetStatExamples() {
             return new List<StatFormat>()
             {
                 new StatFormat(

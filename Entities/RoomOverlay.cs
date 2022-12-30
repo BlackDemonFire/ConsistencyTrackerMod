@@ -7,10 +7,8 @@ using Celeste.Mod.ConsistencyTracker.Stats;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.ConsistencyTracker.Entities
-{
-    public class RoomOverlay : Entity
-    {
+namespace Celeste.Mod.ConsistencyTracker.Entities {
+    public class RoomOverlay : Entity {
         private const float roomAspectRatio = 1.61803f; // golden ratio
         private const float offsetPixels = 10f; // this should be configurable
         private const float totalLengthMultiplier = 0.9f;
@@ -28,8 +26,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
         private int[] checkpointMarkers;
         private int checkpointSeparatorLongPixels;
 
-        public RoomOverlay()
-        {
+        public RoomOverlay() {
             ConsistencyTrackerModule.Instance.Log($"[{nameof(RoomOverlay)}::{nameof(RoomOverlay)}] Building RoomOverlay Object");
             Depth = -101;
             Tag = Tags.HUD | Tags.Global | Tags.PauseUpdate | Tags.TransitionUpdate;
@@ -41,19 +38,15 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             string debugRoomName,
             out CheckpointInfo currentCheckpoint,
             out int otherRoomCount
-        )
-        {
+        ) {
             currentCheckpoint = null;
             otherRoomCount = 0;
 
             foreach (var checkpoint in ConsistencyTrackerModule.Instance.GetPathInputInfo().Checkpoints) {
                 var roomIndex = checkpoint.Rooms.FindIndex(r => r.DebugRoomName == debugRoomName);
-                if (roomIndex >= 0)
-                {
+                if (roomIndex >= 0) {
                     currentCheckpoint = checkpoint;
-                }
-                else
-                {
+                } else {
                     otherRoomCount += checkpoint.RoomCount;
                 }
             }
@@ -61,8 +54,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             return currentCheckpoint != null;
         }
 
-        public override void Update()
-        {
+        public override void Update() {
             RoomNameOverlay ??= new RoomName();
             // build rooms if we must
             var createRooms = roomRectangles == null;
@@ -70,16 +62,13 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 ConsistencyTrackerModule.Instance.CurrentChapterStats != null
                 && ConsistencyTrackerModule.Instance.GetPathInputInfo() != null
                 && createRooms
-            )
-            {
+            ) {
                 roomRectangles = new List<RoomRectangle>();
                 foreach (
                     var checkpoint in ConsistencyTrackerModule.Instance.GetPathInputInfo()
                         .Checkpoints
-                )
-                {
-                    foreach (var room in checkpoint.Rooms)
-                    {
+                ) {
+                    foreach (var room in checkpoint.Rooms) {
                         var stats = ConsistencyTrackerModule.Instance.CurrentChapterStats.GetRoom(room.DebugRoomName);
                         var rect = new RoomRectangle(checkpoint, room, stats);
                         roomRectangles.Add(rect);
@@ -97,8 +86,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 Visible
                 && ConsistencyTrackerModule.Instance.ModSettings.OverlayPosition
                     == OverlayPosition.Disabled
-            )
-            {
+            ) {
                 Visible = false;
             }
             // show if we're not showing and should be
@@ -106,8 +94,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 !Visible
                 && ConsistencyTrackerModule.Instance.ModSettings.OverlayPosition
                     != OverlayPosition.Disabled
-            )
-            {
+            ) {
                 Visible = true;
             }
 
@@ -122,8 +109,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             RoomNameOverlay.Update();
             // set the position based on the current settings
             var overlayPosition = ConsistencyTrackerModule.Instance.ModSettings.OverlayPosition;
-            Position = overlayPosition switch
-            {
+            Position = overlayPosition switch {
                 OverlayPosition.Bottom
                     => new Vector2(Engine.Width / 2f, Engine.Height - offsetPixels),
                 OverlayPosition.Top => new Vector2(Engine.Width / 2f, offsetPixels),
@@ -134,8 +120,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             };
         }
 
-        public override void Render()
-        {
+        public override void Render() {
             base.Render();
 
             var overlayAlpha = ConsistencyTrackerModule.Instance.ModSettings.OverlayOpacity * 0.1f;
@@ -145,16 +130,13 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 ? new Vector2(checkpointSeparatorShortPixels, checkpointSeparatorLongPixels)
                 : new Vector2(checkpointSeparatorLongPixels, checkpointSeparatorShortPixels);
             RoomNameOverlay.Render();
-            if (checkpointMarkers == null || checkpointMarkers.Length == 0)
-            {
+            if (checkpointMarkers == null || checkpointMarkers.Length == 0) {
                 return;
             }
-            foreach (var offset in checkpointMarkers)
-            {
+            foreach (var offset in checkpointMarkers) {
                 var position =
                     Position
-                    + overlayPosition switch
-                    {
+                    + overlayPosition switch {
                         OverlayPosition.Top => new Vector2(offset, 0),
                         OverlayPosition.Bottom => new Vector2(offset, -size.Y),
                         OverlayPosition.Left => new Vector2(0, offset),
@@ -166,8 +148,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             }
         }
 
-        private void UpdateRoomLengths(bool force = false)
-        {
+        private void UpdateRoomLengths(bool force = false) {
             if (roomRectangles == null)
                 return;
 
@@ -230,25 +211,18 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             checkpointSeparatorLongPixels = (int)(checkpointRoomLength / roomAspectRatio);
 
             // update rooms
-            foreach (var roomRectangle in roomRectangles)
-            {
-                if (roomRectangle.RoomInfo.DebugRoomName == currentRoomStats.DebugRoomName)
-                {
+            foreach (var roomRectangle in roomRectangles) {
+                if (roomRectangle.RoomInfo.DebugRoomName == currentRoomStats.DebugRoomName) {
                     roomRectangle.TweenToLength(currentRoomLength, force);
-                }
-                else if (roomRectangle.CheckpointInfo == currentCheckpoint)
-                {
+                } else if (roomRectangle.CheckpointInfo == currentCheckpoint) {
                     roomRectangle.TweenToLength(checkpointRoomLength, force);
-                }
-                else
-                {
+                } else {
                     roomRectangle.TweenToLength(normalRoomLength, force);
                 }
             }
         }
 
-        private void UpdateRoomPositions()
-        {
+        private void UpdateRoomPositions() {
             if (roomRectangles == null)
                 return;
 
@@ -256,10 +230,8 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             int checkpointIndex = 0;
             CheckpointInfo checkpoint = null;
 
-            foreach (var roomRectangle in roomRectangles)
-            {
-                if (checkpoint != null && checkpoint != roomRectangle.CheckpointInfo)
-                {
+            foreach (var roomRectangle in roomRectangles) {
+                if (checkpoint != null && checkpoint != roomRectangle.CheckpointInfo) {
                     checkpointMarkers[checkpointIndex++] = offset + roomPaddingPixels;
                     offset += checkpointSeparatorShortPixels + roomPaddingPixels * 3;
                 }
@@ -271,30 +243,25 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             }
 
             var half = (offset - roomPaddingPixels) / 2;
-            foreach (var roomRectangle in roomRectangles)
-            {
+            foreach (var roomRectangle in roomRectangles) {
                 roomRectangle.Offset -= half;
             }
 
-            for (int i = 0; i < checkpointMarkers.Length; i++)
-            {
+            for (int i = 0; i < checkpointMarkers.Length; i++) {
                 checkpointMarkers[i] -= half;
             }
         }
 
-        private class RoomName : Component
-        {
+        private class RoomName : Component {
             public RoomName() : base(true, true) { }
 
-            public override void Render()
-            {
+            public override void Render() {
                 base.Render();
                 ConsistencyTrackerModule.Instance.Log("[RoomName::Render] Rendering the RoomName");
                 var chapterStats = ConsistencyTrackerModule.Instance.CurrentChapterPath;
                 ConsistencyTrackerModule.Instance.Log($"[RoomName::Render] {chapterStats}");
                 var room = chapterStats?.CurrentRoom;
-                if (room == null)
-                {
+                if (room == null) {
                     ConsistencyTrackerModule.Instance.Log("[RoomName::Render] Current room is null and therefor cannot be rendered.");
                     return;
                 }
@@ -320,8 +287,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             }
         }
 
-        private class RoomRectangle : Component
-        {
+        private class RoomRectangle : Component {
             public readonly CheckpointInfo CheckpointInfo;
             public readonly RoomInfo RoomInfo;
             public readonly RoomStats RoomStats;
@@ -329,15 +295,11 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
             public int Offset;
             public float Length;
 
-            public void TweenToLength(int targetLength, bool force = false)
-            {
-                if (force)
-                {
+            public void TweenToLength(int targetLength, bool force = false) {
+                if (force) {
                     Length = targetLength;
                     tweenTimeRemaining = 0;
-                }
-                else
-                {
+                } else {
                     tweenFrom = Length;
                     tweenTo = targetLength;
                     tweenTimeRemaining = tweenTime;
@@ -353,26 +315,22 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                 CheckpointInfo checkpointInfo,
                 RoomInfo roomInfo,
                 RoomStats roomStats
-            ) : base(true, true)
-            {
+            ) : base(true, true) {
                 CheckpointInfo = checkpointInfo;
                 RoomInfo = roomInfo;
                 RoomStats = roomStats;
             }
 
-            public override void Update()
-            {
+            public override void Update() {
                 base.Update();
 
-                if (tweenTimeRemaining > 0)
-                {
+                if (tweenTimeRemaining > 0) {
                     tweenTimeRemaining -= Engine.RawDeltaTime;
                     Length = Calc.LerpClamp(tweenFrom, tweenTo, 1 - tweenTimeRemaining / tweenTime);
                 }
             }
 
-            public override void Render()
-            {
+            public override void Render() {
                 base.Render();
 
                 var overlayPosition = ConsistencyTrackerModule.Instance.ModSettings.OverlayPosition;
@@ -382,8 +340,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
 
                 var position =
                     Entity.Position
-                    + overlayPosition switch
-                    {
+                    + overlayPosition switch {
                         OverlayPosition.Top => new Vector2(Offset, 0),
                         OverlayPosition.Bottom => new Vector2(Offset, -perp),
                         OverlayPosition.Left => new Vector2(0, Offset),
@@ -392,8 +349,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                     };
 
                 var color = Color.White;
-                if (RoomStats?.PreviousAttempts.Any() == true)
-                {
+                if (RoomStats?.PreviousAttempts.Any() == true) {
                     var lastFive = RoomStats.LastFiveRate;
                     color =
                         lastFive <= 0.33f
@@ -416,8 +372,7 @@ namespace Celeste.Mod.ConsistencyTracker.Entities
                         .CurrentChapterStats
                         .CurrentRoom
                         .DebugRoomName
-                )
-                {
+                ) {
                     Draw.HollowRect(position, size.X, size.Y, Color.White * overlayAlpha);
                 }
             }

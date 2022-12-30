@@ -1,7 +1,5 @@
-﻿namespace Celeste.Mod.ConsistencyTracker.Models
-{
-    public class ModState
-    {
+﻿namespace Celeste.Mod.ConsistencyTracker.Models {
+    public class ModState {
         public bool PlayerIsHoldingGolden { get; set; } = false;
         public bool ChapterCompleted { get; set; } = false;
         public bool GoldenDone { get; set; } = false;
@@ -11,8 +9,7 @@
         public string ModVersion { get; set; } = null;
 
         //{ModSettings.PauseDeathTracking};{ModSettings.RecordPath};{OverlayVersion};{_PlayerIsHoldingGolden}
-        public override string ToString()
-        {
+        public override string ToString() {
             return $"{DeathTrackingPaused};{RecordingPath};{OverlayVersion};{PlayerIsHoldingGolden}";
         }
     }

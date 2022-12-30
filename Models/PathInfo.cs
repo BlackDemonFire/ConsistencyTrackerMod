@@ -3,14 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Celeste.Mod.ConsistencyTracker.Models
-{
+namespace Celeste.Mod.ConsistencyTracker.Models {
     [Serializable]
-    public class PathInfo
-    {
+    public class PathInfo {
         public List<CheckpointInfo> Checkpoints { get; set; } = new List<CheckpointInfo>();
-        public int RoomCount
-        {
+        public int RoomCount {
             get { return Checkpoints.Sum((cpInfo) => cpInfo.Rooms.Count); }
         }
         public AggregateStats Stats { get; set; } = null;
@@ -18,10 +15,8 @@ namespace Celeste.Mod.ConsistencyTracker.Models
 
         public string ParseError { get; set; }
 
-        public static PathInfo GetTestPathInfo()
-        {
-            return new PathInfo()
-            {
+        public static PathInfo GetTestPathInfo() {
+            return new PathInfo() {
                 Checkpoints = new List<CheckpointInfo>()
                 {
                     new CheckpointInfo() { Name = "Start", Abbreviation = "0M" },
@@ -30,20 +25,17 @@ namespace Celeste.Mod.ConsistencyTracker.Models
             };
         }
 
-        public override string ToString()
-        {
+        public override string ToString() {
             List<string> lines = new();
 
-            foreach (CheckpointInfo cpInfo in Checkpoints)
-            {
+            foreach (CheckpointInfo cpInfo in Checkpoints) {
                 lines.Add(cpInfo.ToString());
             }
 
             return string.Join("\n", lines);
         }
 
-        public static PathInfo ParseString(string content, Action<string> log)
-        {
+        public static PathInfo ParseString(string content, Action<string> log) {
             log($"[PathInfo.ParseString] Parsing path info string");
             List<string> lines = content
                 .Trim()
@@ -52,8 +44,7 @@ namespace Celeste.Mod.ConsistencyTracker.Models
 
             var pathInfo = new PathInfo();
 
-            foreach (string line in lines)
-            {
+            foreach (string line in lines) {
                 log(
                     $"\tParsing line '{line}'"
                 );
@@ -65,12 +56,10 @@ namespace Celeste.Mod.ConsistencyTracker.Models
     }
 
     [Serializable]
-    public class CheckpointInfo
-    {
+    public class CheckpointInfo {
         public string Name { get; set; }
         public string Abbreviation { get; set; }
-        public int RoomCount
-        {
+        public int RoomCount {
             get => Rooms.Count;
             private set { }
         }
@@ -80,15 +69,13 @@ namespace Celeste.Mod.ConsistencyTracker.Models
         public int CPNumberInChapter { get; set; } = -1;
         public double GoldenChance { get; set; } = 1;
 
-        public override string ToString()
-        {
+        public override string ToString() {
             string toRet = $"{Name};{Abbreviation};{Rooms.Count}";
             string debugNames = string.Join(",", Rooms);
             return $"{toRet};{debugNames}";
         }
 
-        public static CheckpointInfo ParseString(string line)
-        {
+        public static CheckpointInfo ParseString(string line) {
             List<string> parts = line.Trim()
                 .Split(new string[] { ";" }, StringSplitOptions.None)
                 .ToList();
@@ -100,14 +87,12 @@ namespace Celeste.Mod.ConsistencyTracker.Models
                 .ToList();
             List<RoomInfo> roomInfos = new();
 
-            CheckpointInfo cpInfo = new()
-            {
+            CheckpointInfo cpInfo = new() {
                 Name = name,
                 Abbreviation = abbreviation,
             };
 
-            foreach (string room in rooms)
-            {
+            foreach (string room in rooms) {
                 roomInfos.Add(new RoomInfo() { DebugRoomName = room, Checkpoint = cpInfo });
             }
 
@@ -118,24 +103,20 @@ namespace Celeste.Mod.ConsistencyTracker.Models
     }
 
     [Serializable]
-    public class RoomInfo
-    {
+    public class RoomInfo {
         public CheckpointInfo Checkpoint;
 
         public string DebugRoomName { get; set; }
 
-        public override string ToString()
-        {
+        public override string ToString() {
             return DebugRoomName;
         }
 
         public int RoomNumberInCP { get; set; } = -1;
         public int RoomNumberInChapter { get; set; } = -1;
 
-        public string GetFormattedRoomName(RoomNameDisplayType format)
-        {
-            switch (format)
-            {
+        public string GetFormattedRoomName(RoomNameDisplayType format) {
+            switch (format) {
                 case RoomNameDisplayType.AbbreviationAndRoomNumberInCP:
                     return $"{Checkpoint.Abbreviation}-{RoomNumberInCP}";
                 case RoomNameDisplayType.FullNameAndRoomNumberInCP:
@@ -148,18 +129,14 @@ namespace Celeste.Mod.ConsistencyTracker.Models
         }
     }
 
-    public class AggregateStats
-    {
+    public class AggregateStats {
         public int CountSuccesses { get; set; } = 0;
         public int CountAttempts { get; set; } = 0;
-        public int CountFailures
-        {
+        public int CountFailures {
             get { return CountAttempts - CountSuccesses; }
         }
-        public float SuccessRate
-        {
-            get
-            {
+        public float SuccessRate {
+            get {
                 if (CountAttempts == 0)
                     return 0;
 

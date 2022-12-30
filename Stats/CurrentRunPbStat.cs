@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
+namespace Celeste.Mod.ConsistencyTracker.Stats {
     /*
      Stats to implement:
      {run:currentPbStatus}                 - Format e.g. "Current run: 75. best run", "Current run: 4. best run", "Current run: PB"
@@ -14,8 +13,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
      {run:topXPercentSession}              - Opposite percentage of {run:currentPbStatusPercentSession}
          */
 
-    public class CurrentRunPbStat : Stat
-    {
+    public class CurrentRunPbStat : Stat {
         public static string RunCurrentPbStatus = "{run:currentPbStatus}";
         public static string RunCurrentPbStatusSession = "{run:currentPbStatusSession}";
         public static string RunCurrentPbStatusPercent = "{run:currentPbStatusPercent}";
@@ -40,10 +38,8 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             PathInfo chapterPath,
             ChapterStats chapterStats,
             string format
-        )
-        {
-            if (chapterPath == null)
-            {
+        ) {
+            if (chapterPath == null) {
                 format = StatManager.MissingPathFormat(format, RunCurrentPbStatus);
                 format = StatManager.MissingPathFormat(format, RunCurrentPbStatusSession);
                 format = StatManager.MissingPathFormat(format, RunCurrentPbStatusPercent);
@@ -53,8 +49,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
                 return format;
             }
 
-            if (!chapterStats.ModState.PlayerIsHoldingGolden)
-            { //If player is not holding the golden berry
+            if (!chapterStats.ModState.PlayerIsHoldingGolden) { //If player is not holding the golden berry
                 format = format.Replace(RunCurrentPbStatus, "-");
                 format = format.Replace(RunCurrentPbStatusSession, "-");
                 format = format.Replace(RunCurrentPbStatusPercent, "-%");
@@ -62,9 +57,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
                 format = format.Replace(RunTopXPercent, "-%");
                 format = format.Replace(RunTopXPercentSession, "-%");
                 return format;
-            }
-            else if (chapterPath.CurrentRoom == null)
-            { //or is not on the path
+            } else if (chapterPath.CurrentRoom == null) { //or is not on the path
                 format = StatManager.NotOnPathFormat(format, RunCurrentPbStatus);
                 format = StatManager.NotOnPathFormat(format, RunCurrentPbStatusSession);
                 format = StatManager.NotOnPathFormatPercent(format, RunCurrentPbStatusPercent);
@@ -85,12 +78,9 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
 
             bool foundRoom = false;
             //Walk path
-            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints)
-            {
-                foreach (RoomInfo rInfo in cpInfo.Rooms)
-                {
-                    if (rInfo.DebugRoomName == chapterStats.CurrentRoom.DebugRoomName)
-                    {
+            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms) {
+                    if (rInfo.DebugRoomName == chapterStats.CurrentRoom.DebugRoomName) {
                         foundRoom = true;
                         break;
                     }
@@ -122,26 +112,20 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             string topXPercentStr,
                 topXPercentSessionStr;
 
-            if (totalGoldenDeaths == 0)
-            {
+            if (totalGoldenDeaths == 0) {
                 runStatusPercentStr = "100%";
                 topXPercentStr = "0%";
-            }
-            else
-            {
+            } else {
                 double runStatusPercent = (double)goldenDeathsUntilRoom / totalGoldenDeaths;
 
                 runStatusPercentStr = $"{StatManager.FormatPercentage(runStatusPercent)}";
                 topXPercentStr = $"{StatManager.FormatPercentage(1 - runStatusPercent)}";
             }
 
-            if (totalGoldenDeathsSession == 0)
-            {
+            if (totalGoldenDeathsSession == 0) {
                 runStatusPercentSessionStr = "100%";
                 topXPercentSessionStr = "0%";
-            }
-            else
-            {
+            } else {
                 double runStatusPercentSession =
                     (double)goldenDeathsUntilRoomSession / totalGoldenDeathsSession;
 
@@ -160,15 +144,13 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             return format;
         }
 
-        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats)
-        {
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
             return null;
         }
 
         //current-run-pb;Current run: #{run:currentPbStatus}, better than {run:currentPbStatusPercent} of all runs
         //current-run-pb-session;Current run(Session): #{run:currentPbStatusSession}, better than {run:currentPbStatusPercentSession} of all runs this session
-        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations()
-        {
+        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
             return new List<KeyValuePair<string, string>>()
             {
                 new KeyValuePair<string, string>(
@@ -198,8 +180,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             };
         }
 
-        public override List<StatFormat> GetStatExamples()
-        {
+        public override List<StatFormat> GetStatExamples() {
             return new List<StatFormat>()
             {
                 new StatFormat(

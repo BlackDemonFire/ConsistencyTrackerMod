@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
+namespace Celeste.Mod.ConsistencyTracker.Stats {
     /*
      
      {player:holdingGolden}
@@ -38,7 +37,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
          */
 
     public class BasicPathlessInfo : Stat {
-        
+
         public static string PlayerHoldingGolden = "{player:holdingGolden}";
         public static string PlayerGoldenDone = "{player:goldenDone}";
         public static string PlayerChapterCompleted = "{player:chapterCompleted}";
@@ -114,7 +113,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
         }
         public override List<StatFormat> GetStatExamples() {
             return new List<StatFormat>() {
-                
+
             };
         }
     }

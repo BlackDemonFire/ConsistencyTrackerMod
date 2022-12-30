@@ -2,8 +2,7 @@
 using Celeste.Mod.ConsistencyTracker.Enums;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
+namespace Celeste.Mod.ConsistencyTracker.Stats {
     /*
      
      {path:names-json}
@@ -11,8 +10,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
      'ST-1', 'ST-2', 'ST-3', 'CR-1', 'CR-2'
          */
 
-    public class ListRoomNamesStat : Stat
-    {
+    public class ListRoomNamesStat : Stat {
         public static string ListRoomNames = "{list:roomNames}";
 
         public static List<string> IDs = new() { ListRoomNames, };
@@ -23,30 +21,23 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             PathInfo chapterPath,
             ChapterStats chapterStats,
             string format
-        )
-        {
-            if (chapterPath == null)
-            {
+        ) {
+            if (chapterPath == null) {
                 format = StatManager.MissingPathFormat(format, ListRoomNames);
                 return format;
             }
 
             List<string> rooms = new();
-            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints)
-            {
-                foreach (RoomInfo rInfo in cpInfo.Rooms)
-                {
+            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms) {
                     rooms.Add($"{StatManager.GetFormattedRoomName(rInfo)}");
                 }
             }
 
-            if (StatManager.ListOutputFormat == ListFormat.Plain)
-            {
+            if (StatManager.ListOutputFormat == ListFormat.Plain) {
                 string output = string.Join(", ", rooms);
                 format = format.Replace(ListRoomNames, $"{output}");
-            }
-            else if (StatManager.ListOutputFormat == ListFormat.Json)
-            {
+            } else if (StatManager.ListOutputFormat == ListFormat.Json) {
                 string output = string.Join("', '", rooms);
                 format = format.Replace(ListRoomNames, $"['{output}']");
             }
@@ -54,13 +45,11 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             return format;
         }
 
-        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats)
-        {
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
             return null;
         }
 
-        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations()
-        {
+        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
             return new List<KeyValuePair<string, string>>()
             {
                 new KeyValuePair<string, string>(ListRoomNames, "Outputs the current path as list"),

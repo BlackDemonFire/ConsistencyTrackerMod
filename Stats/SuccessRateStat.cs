@@ -34,8 +34,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
             PathInfo chapterPath,
             ChapterStats chapterStats,
             string format
-        )
-        {
+        ) {
             int attemptCount = StatManager.AttemptCount;
 
             format = format.Replace(

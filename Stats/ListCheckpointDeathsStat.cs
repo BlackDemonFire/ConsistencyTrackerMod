@@ -33,7 +33,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
 
 
 
-            List<int> checkpointDeaths = new List<int>();
+            var checkpointDeaths = new List<int>();
             foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
                 int cpDeaths = 0;
                 foreach (RoomInfo rInfo in cpInfo.Rooms) {

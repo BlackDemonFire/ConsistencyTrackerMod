@@ -2,8 +2,7 @@
 using Celeste.Mod.ConsistencyTracker.Enums;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
+namespace Celeste.Mod.ConsistencyTracker.Stats {
     /*
      
      {player:holdingGolden}
@@ -64,10 +63,8 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             PathInfo chapterPath,
             ChapterStats chapterStats,
             string format
-        )
-        {
-            if (chapterPath == null)
-            {
+        ) {
+            if (chapterPath == null) {
                 format = StatManager.MissingPathFormat(format, RoomName);
 
                 format = StatManager.MissingPathFormat(format, CheckpointName);
@@ -92,8 +89,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
                 $"{StatManager.FormatPercentage(chapterPath.Stats.GoldenChance)}"
             );
 
-            if (chapterPath.CurrentRoom == null)
-            { //Not on path
+            if (chapterPath.CurrentRoom == null) { //Not on path
                 format = StatManager.NotOnPathFormat(format, RoomName, "--");
 
                 format = StatManager.NotOnPathFormat(format, CheckpointName);
@@ -129,8 +125,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             return format;
         }
 
-        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats)
-        {
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
             return null;
         }
 

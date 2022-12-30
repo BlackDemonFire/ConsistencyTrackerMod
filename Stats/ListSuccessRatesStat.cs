@@ -2,10 +2,8 @@
 using Celeste.Mod.ConsistencyTracker.Enums;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
-    public class ListSuccessRatesStat : Stat
-    {
+namespace Celeste.Mod.ConsistencyTracker.Stats {
+    public class ListSuccessRatesStat : Stat {
         public static string ListSuccessRates = "{list:successRates}";
 
         public static List<string> IDs = new() { ListSuccessRates, };
@@ -16,21 +14,16 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             PathInfo chapterPath,
             ChapterStats chapterStats,
             string format
-        )
-        {
-            if (chapterPath == null)
-            {
+        ) {
+            if (chapterPath == null) {
                 format = StatManager.MissingPathFormat(format, ListSuccessRates);
                 return format;
             }
 
             List<string> rooms = new();
-            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints)
-            {
-                foreach (RoomInfo rInfo in cpInfo.Rooms)
-                {
-                    switch (StatManager.ListOutputFormat)
-                    {
+            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
+                foreach (RoomInfo rInfo in cpInfo.Rooms) {
+                    switch (StatManager.ListOutputFormat) {
                         case ListFormat.Plain:
                             rooms.Add(
                                 StatManager.FormatPercentage(
@@ -53,35 +46,27 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             }
 
             string output = string.Join(", ", rooms);
-            if (StatManager.ListOutputFormat == ListFormat.Plain)
-            {
+            if (StatManager.ListOutputFormat == ListFormat.Plain) {
                 format = format.Replace(ListSuccessRates, $"{output}");
-            }
-            else if (StatManager.ListOutputFormat == ListFormat.Json)
-            {
+            } else if (StatManager.ListOutputFormat == ListFormat.Json) {
                 format = format.Replace(ListSuccessRates, $"[{output}]");
             }
 
             return format;
         }
 
-        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats)
-        {
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
             return null;
         }
 
-        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations()
-        {
-            return new List<KeyValuePair<string, string>>()
-            {
+        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
+            return new List<KeyValuePair<string, string>>() {
                 //new KeyValuePair<string, string>(PathSuccessRatesJson, "Outputs the current path as JSON array"),
             };
         }
 
-        public override List<StatFormat> GetStatExamples()
-        {
-            return new List<StatFormat>()
-            {
+        public override List<StatFormat> GetStatExamples() {
+            return new List<StatFormat>() {
                 //new StatFormat("path-json", $"{PathSuccessRatesJson}"),
             };
         }

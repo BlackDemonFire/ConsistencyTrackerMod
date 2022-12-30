@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats
-{
+namespace Celeste.Mod.ConsistencyTracker.Stats {
     /*
         Red: {chapter:color-red}
         Yellow: {chapter:color-yellow}
@@ -11,8 +10,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
 
          */
 
-    public class SuccessRateColorsStat : Stat
-    {
+    public class SuccessRateColorsStat : Stat {
         public static string ColorRed = "{chapter:color-red}";
         public static string ColorYellow = "{chapter:color-yellow}";
         public static string ColorGreen = "{chapter:color-green}";
@@ -52,17 +50,17 @@ namespace Celeste.Mod.ConsistencyTracker.Stats
             }
 
             //Light Green, Green, Yellow, Red
-            int[] colorCounts = new int[] { 0, 0, 0, 0 };
-            int[] colorCountsCP = new int[] { 0, 0, 0, 0 };
+            var colorCounts = new int[] { 0, 0, 0, 0 };
+            var colorCountsCP = new int[] { 0, 0, 0, 0 };
 
-            List<string> listColorRedChapter = new List<string>();
-            List<string> listColorRedCheckpoint = new List<string>();
+            var listColorRedChapter = new List<string>();
+            var listColorRedCheckpoint = new List<string>();
 
             //Walk path
             bool foundRoom = false;
             foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
                 int[] tempColorCountsCp = new int[] { 0, 0, 0, 0 };
-                List<string> tempColorListCp = new List<string>();
+               var tempColorListCp = new List<string>();
 
                 foreach (RoomInfo rInfo in cpInfo.Rooms) {
                     RoomStats rStats = chapterStats.GetRoom(rInfo.DebugRoomName);
