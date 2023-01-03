@@ -16,7 +16,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
         public static string RoomChokeRateSession = "{room:chokeRateSession}";
         public static string CheckpointChokeRate = "{checkpoint:chokeRate}";
         public static string CheckpointChokeRateSession = "{checkpoint:chokeRateSession}";
-        public static List<string> IDs = new List<string>()
+        public static List<string> IDs = new()
         {
             RoomChokeRate,
             RoomChokeRateSession,
@@ -42,26 +42,26 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
             CheckpointInfo currentCpInfo = null;
 
             //======== Room ========
-            int[] goldenDeathsInRoom = new int[] { 0, 0 };
-            int[] goldenDeathsAfterRoom = new int[] { 0, 0 };
+            var goldenDeathsInRoom = new[] { 0, 0 };
+            var goldenDeathsAfterRoom = new[] { 0, 0 };
 
-            bool pastRoom = false;
+            var pastRoom = false;
 
-            foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
-                foreach (RoomInfo rInfo in cpInfo.Rooms) {
-                    RoomStats rStats = chapterStats.GetRoom(rInfo.DebugRoomName);
+            foreach (var cpInfo in chapterPath.Checkpoints) {
+                foreach (var rInfo in cpInfo.Rooms) {
+                    var rStats = chapterStats.GetRoom(rInfo.DebugRoomName);
 
                     if (pastRoom) {
                         goldenDeathsAfterRoom[0] += rStats.GoldenBerryDeaths;
                         goldenDeathsAfterRoom[1] += rStats.GoldenBerryDeathsSession;
                     }
 
-                    if (rInfo.DebugRoomName == chapterStats.CurrentRoom.DebugRoomName) {
-                        currentCpInfo = cpInfo;
-                        pastRoom = true;
-                        goldenDeathsInRoom[0] = rStats.GoldenBerryDeaths;
-                        goldenDeathsInRoom[1] = rStats.GoldenBerryDeathsSession;
-                    }
+                    if (rInfo.DebugRoomName != chapterStats.CurrentRoom.DebugRoomName)
+                        continue;
+                    currentCpInfo = cpInfo;
+                    pastRoom = true;
+                    goldenDeathsInRoom[0] = rStats.GoldenBerryDeaths;
+                    goldenDeathsInRoom[1] = rStats.GoldenBerryDeathsSession;
                 }
             }
 
@@ -85,7 +85,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
 
             //Format
             if (float.IsNaN(crRoom)) { //pastRoom is false when player is not on path
-                format = format.Replace(RoomChokeRate, $"-%");
+                format = format.Replace(RoomChokeRate, "-%");
             } else if (pastRoom == false) {
                 format = StatManager.NotOnPathFormatPercent(format, RoomChokeRate);
             } else {
@@ -93,35 +93,32 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
             }
 
             if (float.IsNaN(crRoomSession)) {
-                format = format.Replace(RoomChokeRateSession, $"-%");
+                format = format.Replace(RoomChokeRateSession, "-%");
             } else if (pastRoom == false) {
                 format = StatManager.NotOnPathFormatPercent(format, RoomChokeRateSession);
             } else {
-                format = format.Replace(
-                    RoomChokeRateSession,
-                    $"{StatManager.FormatPercentage(crRoomSession)}"
-                );
+                format = format.Replace(RoomChokeRateSession, $"{StatManager.FormatPercentage(crRoomSession)}");
             }
 
             //======== Checkpoint ========
 
             if (currentCpInfo != null) { //Check if player is on path
-                int[] goldenDeathsInCP = new int[] { 0, 0 };
-                int[] goldenDeathsAfterCP = new int[] { 0, 0 };
+                var goldenDeathsInCP = new[] { 0, 0 };
+                var goldenDeathsAfterCP = new[] { 0, 0 };
 
-                bool pastCP = false;
+                var pastCP = false;
 
-                foreach (CheckpointInfo cpInfo in chapterPath.Checkpoints) {
+                foreach (var cpInfo in chapterPath.Checkpoints) {
                     if (pastCP) {
                         goldenDeathsAfterCP[0] += cpInfo.Stats.GoldenBerryDeaths;
                         goldenDeathsAfterCP[1] += cpInfo.Stats.GoldenBerryDeathsSession;
                     }
 
-                    if (cpInfo == currentCpInfo) {
-                        pastCP = true;
-                        goldenDeathsInCP[0] = cpInfo.Stats.GoldenBerryDeaths;
-                        goldenDeathsInCP[1] = cpInfo.Stats.GoldenBerryDeathsSession;
-                    }
+                    if (cpInfo != currentCpInfo)
+                        continue;
+                    pastCP = true;
+                    goldenDeathsInCP[0] = cpInfo.Stats.GoldenBerryDeaths;
+                    goldenDeathsInCP[1] = cpInfo.Stats.GoldenBerryDeathsSession;
                 }
 
                 float crCheckpoint,
@@ -141,27 +138,13 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
                         (float)goldenDeathsInCP[1] / (goldenDeathsInCP[1] + goldenDeathsAfterCP[1]);
 
                 //Format
-                if (float.IsNaN(crCheckpoint)) {
-                    format = format.Replace(CheckpointChokeRate, $"-%");
-                } else {
-                    format = format.Replace(
-                        CheckpointChokeRate,
-                        $"{StatManager.FormatPercentage(crCheckpoint)}"
-                    );
-                }
+                format = format.Replace(CheckpointChokeRate, float.IsNaN(crCheckpoint) ? "-%" : $"{StatManager.FormatPercentage(crCheckpoint)}");
 
-                if (float.IsNaN(crCheckpointSession)) {
-                    format = format.Replace(CheckpointChokeRateSession, $"-%");
-                } else {
-                    format = format.Replace(
-                        CheckpointChokeRateSession,
-                        $"{StatManager.FormatPercentage(crCheckpointSession)}"
-                    );
-                }
+                format = format.Replace(CheckpointChokeRateSession, float.IsNaN(crCheckpointSession) ? "-%" : $"{StatManager.FormatPercentage(crCheckpointSession)}");
             } else {
                 //Player is not on path
-                format = format.Replace(CheckpointChokeRate, $"-%");
-                format = format.Replace(CheckpointChokeRateSession, $"-%");
+                format = format.Replace(CheckpointChokeRate, "-%");
+                format = format.Replace(CheckpointChokeRateSession, "-%");
             }
 
             return format;
@@ -175,32 +158,17 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
         public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
             return new List<KeyValuePair<string, string>>()
             {
-                new KeyValuePair<string, string>(
-                    RoomChokeRate,
-                    "Choke Rate of the current room (how many runs died to this room / how many runs passed this room)"
-                ),
-                new KeyValuePair<string, string>(
-                    RoomChokeRateSession,
-                    "Choke Rate of the current room in the current session"
-                ),
-                new KeyValuePair<string, string>(
-                    CheckpointChokeRate,
-                    "Choke Rate of the current checkpoint"
-                ),
-                new KeyValuePair<string, string>(
-                    CheckpointChokeRateSession,
-                    "Choke Rate of the current checkpoint in the current session"
-                ),
+                new(RoomChokeRate, "Choke Rate of the current room (how many runs died to this room / how many runs passed this room)"),
+                new(RoomChokeRateSession, "Choke Rate of the current room in the current session"),
+                new(CheckpointChokeRate, "Choke Rate of the current checkpoint"),
+                new(CheckpointChokeRateSession, "Choke Rate of the current checkpoint in the current session"),
             };
         }
 
         public override List<StatFormat> GetStatExamples() {
             return new List<StatFormat>()
             {
-                new StatFormat(
-                    "choke-rate",
-                    $"Room Choke Rate: {RoomChokeRate} (CP: {CheckpointChokeRate})"
-                )
+                new("choke-rate", $"Room Choke Rate: {RoomChokeRate} (CP: {CheckpointChokeRate})")
             };
         }
     }

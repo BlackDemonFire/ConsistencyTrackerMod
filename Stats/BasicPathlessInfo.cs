@@ -68,7 +68,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
 
         public static string CampaignName = "{campaign:name}";
 
-        public static List<string> IDs = new List<string>() {
+        public static List<string> IDs = new() {
             PlayerHoldingGolden, PlayerGoldenDone, PlayerChapterCompleted,
             ModTrackingPaused, ModRecordingPath, ModModVersion, ModOverlayVersion,
             RoomDebugName, RoomGoldenDeaths, RoomGoldenDeathsSession,
@@ -107,14 +107,10 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
 
 
         public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
-            return new List<KeyValuePair<string, string>>() {
-
-            };
+            return new List<KeyValuePair<string, string>>();
         }
         public override List<StatFormat> GetStatExamples() {
-            return new List<StatFormat>() {
-
-            };
+            return new List<StatFormat>();
         }
     }
 }

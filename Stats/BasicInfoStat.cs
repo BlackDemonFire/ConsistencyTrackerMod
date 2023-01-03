@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Celeste.Mod.ConsistencyTracker.Enums;
 using Celeste.Mod.ConsistencyTracker.Models;
 
 namespace Celeste.Mod.ConsistencyTracker.Stats {
@@ -48,7 +47,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
         public static string ChapterGoldenDeathsSession = "{chapter:goldenDeathsSession}";
         public static string ChapterGoldenChance = "{chapter:goldenChance}";
 
-        public static List<string> IDs = new List<string>() {
+        public static List<string> IDs = new() {
             //PlayerHoldingGolden,
             //ModTrackingPaused, ModRecordingPath, ModModVersion, ModOverlayVersion,
             RoomName, /*RoomDebugName, RoomGoldenDeaths, RoomGoldenDeathsSession,*/
@@ -100,27 +99,18 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
                 return format;
             }
 
-            RoomInfo rInfo = chapterPath.CurrentRoom;
+            var rInfo = chapterPath.CurrentRoom;
 
-            RoomNameDisplayType nameType = StatManager.RoomNameType;
-            format = format.Replace(
-                RoomName,
-                $"{chapterPath.CurrentRoom.GetFormattedRoomName(nameType)}"
-            );
+            var nameType = StatManager.RoomNameType;
+            format = format.Replace(RoomName, $"{chapterPath.CurrentRoom.GetFormattedRoomName(nameType)}");
 
-            CheckpointInfo cpInfo = rInfo.Checkpoint;
+            var cpInfo = rInfo.Checkpoint;
 
             format = format.Replace(CheckpointName, $"{cpInfo.Name}");
             format = format.Replace(CheckpointAbbreviation, $"{cpInfo.Abbreviation}");
             format = format.Replace(CheckpointGoldenDeaths, $"{cpInfo.Stats.GoldenBerryDeaths}");
-            format = format.Replace(
-                CheckpointGoldenDeathsSession,
-                $"{cpInfo.Stats.GoldenBerryDeathsSession}"
-            );
-            format = format.Replace(
-                CheckpointGoldenChance,
-                $"{StatManager.FormatPercentage(cpInfo.Stats.GoldenChance)}"
-            );
+            format = format.Replace(CheckpointGoldenDeathsSession, $"{cpInfo.Stats.GoldenBerryDeathsSession}");
+            format = format.Replace(CheckpointGoldenChance, $"{StatManager.FormatPercentage(cpInfo.Stats.GoldenChance)}");
 
             return format;
         }
@@ -132,32 +122,32 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
 
         public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
             return new List<KeyValuePair<string, string>>() {
-                new KeyValuePair<string, string>(BasicPathlessInfo.CampaignName, "Name of the campaign"),
+                new(BasicPathlessInfo.CampaignName, "Name of the campaign"),
 
-                new KeyValuePair<string, string>(BasicPathlessInfo.ChapterName, "Name of the chapter"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ChapterDebugName, "[DEV] Debug name of the chapter"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ChapterSID, "[DEV] SID of chapter"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ChapterSanitizedSID, "[DEV] Dialog sanitized SID of chapter"),
-                new KeyValuePair<string, string>(ChapterGoldenDeaths, "Golden Deaths in the chapter"),
-                new KeyValuePair<string, string>(ChapterGoldenDeathsSession, "Golden Deaths in the chapter in the current session"),
-                new KeyValuePair<string, string>(ChapterGoldenChance, "Golden Chance of the chapter"),
+                new(BasicPathlessInfo.ChapterName, "Name of the chapter"),
+                new(BasicPathlessInfo.ChapterDebugName, "[DEV] Debug name of the chapter"),
+                new(BasicPathlessInfo.ChapterSID, "[DEV] SID of chapter"),
+                new(BasicPathlessInfo.ChapterSanitizedSID, "[DEV] Dialog sanitized SID of chapter"),
+                new(ChapterGoldenDeaths, "Golden Deaths in the chapter"),
+                new(ChapterGoldenDeathsSession, "Golden Deaths in the chapter in the current session"),
+                new(ChapterGoldenChance, "Golden Chance of the chapter"),
 
-                new KeyValuePair<string, string>(CheckpointName, "Name of the current checkpoint"),
-                new KeyValuePair<string, string>(CheckpointAbbreviation, "Abbreviation of the current checkpoint's name"),
-                new KeyValuePair<string, string>(CheckpointGoldenDeaths, "Golden Deaths in the current checkpoint"),
-                new KeyValuePair<string, string>(CheckpointGoldenDeathsSession, "Golden Deaths in the current checkpoint in the current session"),
-                new KeyValuePair<string, string>(CheckpointGoldenChance, "Golden Chance of the current checkpoint"),
+                new(CheckpointName, "Name of the current checkpoint"),
+                new(CheckpointAbbreviation, "Abbreviation of the current checkpoint's name"),
+                new(CheckpointGoldenDeaths, "Golden Deaths in the current checkpoint"),
+                new(CheckpointGoldenDeathsSession, "Golden Deaths in the current checkpoint in the current session"),
+                new(CheckpointGoldenChance, "Golden Chance of the current checkpoint"),
 
-                new KeyValuePair<string, string>(RoomName, "Name of the room. Display format can be changed via Mod Options -> Consistency Tracker -> Live Data -> Room Name Format"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.RoomDebugName, "Debug name of the current room"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.RoomGoldenDeaths, "Golden Deaths in the current room"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.RoomGoldenDeathsSession, "Golden Deaths in the current room in the current session"),
+                new(RoomName, "Name of the room. Display format can be changed via Mod Options -> Consistency Tracker -> Live Data -> Room Name Format"),
+                new(BasicPathlessInfo.RoomDebugName, "Debug name of the current room"),
+                new(BasicPathlessInfo.RoomGoldenDeaths, "Golden Deaths in the current room"),
+                new(BasicPathlessInfo.RoomGoldenDeathsSession, "Golden Deaths in the current room in the current session"),
 
-                new KeyValuePair<string, string>(BasicPathlessInfo.PlayerHoldingGolden, "Whether the player is holding a golden berry"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ModTrackingPaused, "Whether death tracking is currently paused"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ModRecordingPath, "Whether the path is currently being recorded"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ModModVersion, "Current version of the mod"),
-                new KeyValuePair<string, string>(BasicPathlessInfo.ModOverlayVersion, "Most recent version of the overlay"),
+                new(BasicPathlessInfo.PlayerHoldingGolden, "Whether the player is holding a golden berry"),
+                new(BasicPathlessInfo.ModTrackingPaused, "Whether death tracking is currently paused"),
+                new(BasicPathlessInfo.ModRecordingPath, "Whether the path is currently being recorded"),
+                new(BasicPathlessInfo.ModModVersion, "Current version of the mod"),
+                new(BasicPathlessInfo.ModOverlayVersion, "Most recent version of the overlay"),
             };
         }
         public override List<StatFormat> GetStatExamples() {
@@ -166,7 +156,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
                 $"\n--- Checkpoint ---\nName: {CheckpointName} ({CheckpointAbbreviation})\nGolden Deaths: {CheckpointGoldenDeaths} ({CheckpointGoldenDeathsSession})\nGolden Chance: {CheckpointGoldenChance}\n" +
                 $"\n--- Room ---\nName: {RoomName} ({BasicPathlessInfo.RoomDebugName})\nGolden Deaths: {BasicPathlessInfo.RoomGoldenDeaths} ({BasicPathlessInfo.RoomGoldenDeathsSession})\n" +
                 $"\n--- Mod State ---\nTracking Paused: {BasicPathlessInfo.ModTrackingPaused}\nRecording Path: {BasicPathlessInfo.ModRecordingPath}\nPlayer Holding Golden: {BasicPathlessInfo.PlayerHoldingGolden} | Chapter completed: {BasicPathlessInfo.PlayerChapterCompleted} | Golden done: {BasicPathlessInfo.PlayerGoldenDone}\nMod Version: {BasicPathlessInfo.ModModVersion}\nOverlay Version: {BasicPathlessInfo.ModOverlayVersion}"),
-                new StatFormat("current-map", $"Map: '{BasicPathlessInfo.ChapterName}' from '{BasicPathlessInfo.CampaignName}'"),
+                new("current-map", $"Map: '{BasicPathlessInfo.ChapterName}' from '{BasicPathlessInfo.CampaignName}'"),
             };
         }
     }

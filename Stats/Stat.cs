@@ -1,42 +1,42 @@
 ﻿using Celeste.Mod.ConsistencyTracker.Models;
 using System.Collections.Generic;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats {
-    public abstract class Stat {
-        public List<string> Identificators;
+namespace Celeste.Mod.ConsistencyTracker.Stats;
 
-        public Stat(List<string> pIdentificators) {
-            Identificators = pIdentificators;
-        }
+public abstract class Stat {
+    public List<string> Identificators;
 
-        public virtual bool ContainsIdentificator(string format) {
-            return Identificators.Exists((id) => format.Contains(id));
-        }
+    public Stat(List<string> pIdentificators) {
+        Identificators = pIdentificators;
+    }
 
-        /// <summary>Formats the data for this stat.</summary>
-        /// <param name="chapterPath">The chapter path.</param>
-        /// <param name="chapterStats">The chapter stats.</param>
-        /// <param name="format">The format.</param>
-        /// <returns>The format with the appropriate data inserted</returns>
-        public abstract string FormatStat(
-            PathInfo chapterPath,
-            ChapterStats chapterStats,
-            string format
-        );
+    public virtual bool ContainsIdentificator(string format) {
+        return Identificators.Exists((id) => format.Contains(id));
+    }
 
-        /// <summary>Formats the data for the summary export.</summary>
-        /// <param name="chapterPath">The chapter path.</param>
-        /// <param name="chapterStats">The chapter stats.</param>
-        /// <returns>A string to which comprises a section in the summary export
-        /// for this stat, or null when this stat shouldn't be added to the summary</returns>
-        public abstract string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats);
+    /// <summary>Formats the data for this stat.</summary>
+    /// <param name="chapterPath">The chapter path.</param>
+    /// <param name="chapterStats">The chapter stats.</param>
+    /// <param name="format">The format.</param>
+    /// <returns>The format with the appropriate data inserted</returns>
+    public abstract string FormatStat(
+        PathInfo chapterPath,
+        ChapterStats chapterStats,
+        string format
+    );
 
-        public virtual List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
-            return null;
-        }
+    /// <summary>Formats the data for the summary export.</summary>
+    /// <param name="chapterPath">The chapter path.</param>
+    /// <param name="chapterStats">The chapter stats.</param>
+    /// <returns>A string to which comprises a section in the summary export
+    /// for this stat, or null when this stat shouldn't be added to the summary</returns>
+    public abstract string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats);
 
-        public virtual List<StatFormat> GetStatExamples() {
-            return null;
-        }
+    public virtual List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
+        return null;
+    }
+
+    public virtual List<StatFormat> GetStatExamples() {
+        return null;
     }
 }
