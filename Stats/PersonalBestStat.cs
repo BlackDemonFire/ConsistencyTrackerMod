@@ -4,321 +4,322 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste.Mod.ConsistencyTracker.Models;
 
-namespace Celeste.Mod.ConsistencyTracker.Stats;
-/*
- Stats to implement:
- {pb:best}
- {pb:bestSession}
- {pb:bestRoomNumber}
- {pb:bestRoomNumberSession}
+namespace Celeste.Mod.ConsistencyTracker.Stats {
+    /*
+     Stats to implement:
+     {pb:best}
+     {pb:bestSession}
+     {pb:bestRoomNumber}
+     {pb:bestRoomNumberSession}
 
- {pb:best#<number>}
- {pb:bestSession#<number>}
+     {pb:best#<number>}
+     {pb:bestSession#<number>}
 
- {pb:bestRoomNumber#<number>}
- {pb:bestRoomNumberSession#<number>}
-     */
+     {pb:bestRoomNumber#<number>}
+     {pb:bestRoomNumberSession#<number>}
+         */
 
-public class PersonalBestStat : Stat {
-    public static string PBBest = "{pb:best}";
-    public static string PBBestSession = "{pb:bestSession}";
-    public static string PBBestRoomNumber = "{pb:bestRoomNumber}";
-    public static string PBBestRoomNumberSession = "{pb:bestRoomNumberSession}";
-    public static List<string> IDs =
-        new() { PBBest, PBBestSession, PBBestRoomNumber, PBBestRoomNumberSession };
+    public class PersonalBestStat : Stat {
+        public static string PBBest = "{pb:best}";
+        public static string PBBestSession = "{pb:bestSession}";
+        public static string PBBestRoomNumber = "{pb:bestRoomNumber}";
+        public static string PBBestRoomNumberSession = "{pb:bestRoomNumberSession}";
+        public static List<string> IDs =
+            new List<string>() { PBBest, PBBestSession, PBBestRoomNumber, PBBestRoomNumberSession };
 
-    public static string BestPattern = @"\{pb:best#(.*?)\}";
-    public static string BestPatternSession = @"\{pb:bestSession#(.*?)\}";
+        public static string BestPattern = @"\{pb:best#(.*?)\}";
+        public static string BestPatternSession = @"\{pb:bestSession#(.*?)\}";
 
-    public static string RoomNumberPattern = @"\{pb:bestRoomNumber#(.*?)\}";
-    public static string RoomNumberPatternSession = @"\{pb:bestRoomNumberSession#(.*?)\}";
+        public static string RoomNumberPattern = @"\{pb:bestRoomNumber#(.*?)\}";
+        public static string RoomNumberPatternSession = @"\{pb:bestRoomNumberSession#(.*?)\}";
 
-    public PersonalBestStat() : base(IDs) { }
+        public PersonalBestStat() : base(IDs) { }
 
-    public override bool ContainsIdentificator(string format) {
-        if (format.Contains(PBBest) || format.Contains(PBBestSession))
-            return true;
+        public override bool ContainsIdentificator(string format) {
+            if (format.Contains(PBBest) || format.Contains(PBBestSession))
+                return true;
 
-        return Regex.IsMatch(format, BestPattern)
-               || Regex.IsMatch(format, BestPatternSession)
-               || Regex.IsMatch(format, RoomNumberPattern)
-               || Regex.IsMatch(format, RoomNumberPatternSession);
-    }
-
-    public override string FormatStat(
-        PathInfo chapterPath,
-        ChapterStats chapterStats,
-        string format
-    ) {
-        if (chapterPath == null) {
-            format = StatManager.MissingPathFormat(format, PBBest);
-            format = StatManager.MissingPathFormat(format, PBBestSession);
-            format = Regex.Replace(format, BestPattern, StatManager.MissingPathOutput);
-            format = Regex.Replace(format, BestPatternSession, StatManager.MissingPathOutput);
-
-            format = StatManager.MissingPathFormat(format, PBBestRoomNumber);
-            format = StatManager.MissingPathFormat(format, PBBestRoomNumberSession);
-            format = Regex.Replace(format, RoomNumberPattern, StatManager.MissingPathOutput);
-            format = Regex.Replace(
-                format,
-                RoomNumberPatternSession,
-                StatManager.MissingPathOutput
-            );
-            return format;
+            return Regex.IsMatch(format, BestPattern)
+                   || Regex.IsMatch(format, BestPatternSession)
+                   || Regex.IsMatch(format, RoomNumberPattern)
+                   || Regex.IsMatch(format, RoomNumberPatternSession);
         }
 
-        Dictionary<string, string> invalidFormats = new();
+        public override string FormatStat(
+            PathInfo chapterPath,
+            ChapterStats chapterStats,
+            string format
+        ) {
+            if (chapterPath == null) {
+                format = StatManager.MissingPathFormat(format, PBBest);
+                format = StatManager.MissingPathFormat(format, PBBestSession);
+                format = Regex.Replace(format, BestPattern, StatManager.MissingPathOutput);
+                format = Regex.Replace(format, BestPatternSession, StatManager.MissingPathOutput);
 
-        Dictionary<int, string> pbRoomsToFormat = new();
-        Dictionary<int, string> pbRoomsToFormatSession = new();
-
-        Dictionary<int, string> pbRoomNumbersToFormat = new();
-        Dictionary<int, string> pbRoomNumbersToFormatSession = new();
-
-        if (format.Contains(PBBest))
-            pbRoomsToFormat.Add(1, null);
-        if (format.Contains(PBBestSession))
-            pbRoomsToFormatSession.Add(1, null);
-
-        if (format.Contains(PBBestRoomNumber))
-            pbRoomNumbersToFormat.Add(1, null);
-        if (format.Contains(PBBestRoomNumberSession))
-            pbRoomNumbersToFormatSession.Add(1, null);
-
-        var matches = Regex.Matches(format, BestPattern);
-        foreach (Match match in matches) {
-            for (var i = 1; i < match.Groups.Count; i++) {
-                var pbNumberStr = match.Groups[i].Value;
-                try {
-                    var pbNumberInt = int.Parse(pbNumberStr);
-                    if (pbNumberInt < 1)
-                        throw new ArgumentException();
-
-                    if (!pbRoomsToFormat.ContainsKey(pbNumberInt))
-                        pbRoomsToFormat.Add(pbNumberInt, null);
-                } catch (FormatException) {
-                    if (invalidFormats.ContainsKey($"{{pb:best#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add(
-                        $"{{pb:best#{match.Groups[i].Value}}}",
-                        $"<Invalid PB number value: {match.Groups[i].Value}>"
-                    );
-                } catch (ArgumentException) {
-                    if (invalidFormats.ContainsKey($"{{pb:best#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add(
-                        $"{{pb:best#{match.Groups[i].Value}}}",
-                        $"<PB number must be 1 or greater: {match.Groups[i].Value}>"
-                    );
-                } catch (Exception) {
-                    if (invalidFormats.ContainsKey($"{{pb:best#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add(
-                        $"{{pb:best#{match.Groups[i].Value}}}",
-                        $"<Invalid PB number value: {match.Groups[i].Value}>"
-                    );
-                }
+                format = StatManager.MissingPathFormat(format, PBBestRoomNumber);
+                format = StatManager.MissingPathFormat(format, PBBestRoomNumberSession);
+                format = Regex.Replace(format, RoomNumberPattern, StatManager.MissingPathOutput);
+                format = Regex.Replace(
+                    format,
+                    RoomNumberPatternSession,
+                    StatManager.MissingPathOutput
+                );
+                return format;
             }
-        }
 
-        matches = Regex.Matches(format, BestPatternSession);
-        foreach (Match match in matches) {
-            for (var i = 1; i < match.Groups.Count; i++) {
-                var pbNumberStr = match.Groups[i].Value;
-                try {
-                    var pbNumberInt = int.Parse(pbNumberStr);
-                    if (pbNumberInt < 1)
-                        throw new ArgumentException();
+            var invalidFormats = new Dictionary<string, string>();
 
-                    if (!pbRoomsToFormatSession.ContainsKey(pbNumberInt))
-                        pbRoomsToFormatSession.Add(pbNumberInt, null);
-                } catch (FormatException) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestSession#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
-                } catch (ArgumentException) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestSession#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestSession#{match.Groups[i].Value}}}", $"<PB number must be 1 or greater: {match.Groups[i].Value}>");
-                } catch (Exception) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestSession#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
-                }
-            }
-        }
+            var pbRoomsToFormat = new Dictionary<int, string>();
+            var pbRoomsToFormatSession = new Dictionary<int, string>();
 
-        matches = Regex.Matches(format, RoomNumberPattern);
-        foreach (Match match in matches) {
-            for (var i = 1; i < match.Groups.Count; i++) {
-                var pbNumberStr = match.Groups[i].Value;
-                try {
-                    var pbNumberInt = int.Parse(pbNumberStr);
-                    if (pbNumberInt < 1)
-                        throw new ArgumentException();
+            var pbRoomNumbersToFormat = new Dictionary<int, string>();
+            var pbRoomNumbersToFormatSession = new Dictionary<int, string>();
 
-                    if (!pbRoomNumbersToFormat.ContainsKey(pbNumberInt))
-                        pbRoomNumbersToFormat.Add(pbNumberInt, null);
-                } catch (FormatException) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
-                } catch (ArgumentException) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}", $"<PB number must be 1 or greater: {match.Groups[i].Value}>");
-                } catch (Exception) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
-                }
-            }
-        }
+            if (format.Contains(PBBest))
+                pbRoomsToFormat.Add(1, null);
+            if (format.Contains(PBBestSession))
+                pbRoomsToFormatSession.Add(1, null);
 
-        matches = Regex.Matches(format, RoomNumberPatternSession);
-        foreach (Match match in matches) {
-            for (var i = 1; i < match.Groups.Count; i++) {
-                var pbNumberStr = match.Groups[i].Value;
-                try {
-                    var pbNumberInt = int.Parse(pbNumberStr);
-                    if (pbNumberInt < 1)
-                        throw new ArgumentException();
+            if (format.Contains(PBBestRoomNumber))
+                pbRoomNumbersToFormat.Add(1, null);
+            if (format.Contains(PBBestRoomNumberSession))
+                pbRoomNumbersToFormatSession.Add(1, null);
 
-                    if (!pbRoomNumbersToFormatSession.ContainsKey(pbNumberInt))
-                        pbRoomNumbersToFormatSession.Add(pbNumberInt, null);
-                } catch (FormatException) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
-                } catch (ArgumentException) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}", $"<PB number must be 1 or greater: {match.Groups[i].Value}>");
-                } catch (Exception) {
-                    if (invalidFormats.ContainsKey($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}"))
-                        continue;
-                    invalidFormats.Add($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
-                }
-            }
-        }
+            var matches = Regex.Matches(format, BestPattern);
+            foreach (Match match in matches) {
+                for (var i = 1; i < match.Groups.Count; i++) {
+                    var pbNumberStr = match.Groups[i].Value;
+                    try {
+                        var pbNumberInt = int.Parse(pbNumberStr);
+                        if (pbNumberInt < 1)
+                            throw new ArgumentException();
 
-        var pbNumber = 0;
-        var pbNumberSession = 0;
-        var nameFormat = StatManager.RoomNameType;
-
-        //Walk the path BACKWARDS (d1d7 reference???)
-        for (var cpIndex = chapterPath.Checkpoints.Count - 1; cpIndex >= 0; cpIndex--) {
-            var cpInfo = chapterPath.Checkpoints[cpIndex];
-
-            for (var roomIndex = cpInfo.Rooms.Count - 1; roomIndex >= 0; roomIndex--) {
-                var rInfo = cpInfo.Rooms[roomIndex];
-
-                var goldenDeaths = chapterStats.GetRoom(rInfo.DebugRoomName).GoldenBerryDeaths;
-                var goldenDeathsSession = chapterStats
-                    .GetRoom(rInfo.DebugRoomName)
-                    .GoldenBerryDeathsSession;
-
-                if (goldenDeaths > 0) {
-                    var roomName = rInfo.GetFormattedRoomName(nameFormat);
-                    if (goldenDeaths > 1)
-                        roomName = $"{roomName} x{goldenDeaths}";
-
-                    pbNumber++;
-                    if (pbRoomsToFormat.ContainsKey(pbNumber)) {
-                        pbRoomsToFormat[pbNumber] = roomName;
-                    }
-                    if (pbRoomNumbersToFormat.ContainsKey(pbNumber)) {
-                        pbRoomNumbersToFormat[pbNumber] = $"{rInfo.RoomNumberInChapter}";
-                    }
-                }
-
-                if (goldenDeathsSession <= 0)
-                    continue;
-                {
-                    var roomName = rInfo.GetFormattedRoomName(nameFormat);
-                    if (goldenDeathsSession > 1)
-                        roomName = $"{roomName} x{goldenDeathsSession}";
-
-                    pbNumberSession++;
-                    if (pbRoomsToFormatSession.ContainsKey(pbNumberSession)) {
-                        pbRoomsToFormatSession[pbNumberSession] = roomName;
-                    }
-                    if (pbRoomNumbersToFormatSession.ContainsKey(pbNumberSession)) {
-                        pbRoomNumbersToFormatSession[pbNumberSession] =
-                            $"{rInfo.RoomNumberInChapter}";
+                        if (!pbRoomsToFormat.ContainsKey(pbNumberInt))
+                            pbRoomsToFormat.Add(pbNumberInt, null);
+                    } catch (FormatException) {
+                        if (invalidFormats.ContainsKey($"{{pb:best#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add(
+                            $"{{pb:best#{match.Groups[i].Value}}}",
+                            $"<Invalid PB number value: {match.Groups[i].Value}>"
+                        );
+                    } catch (ArgumentException) {
+                        if (invalidFormats.ContainsKey($"{{pb:best#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add(
+                            $"{{pb:best#{match.Groups[i].Value}}}",
+                            $"<PB number must be 1 or greater: {match.Groups[i].Value}>"
+                        );
+                    } catch (Exception) {
+                        if (invalidFormats.ContainsKey($"{{pb:best#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add(
+                            $"{{pb:best#{match.Groups[i].Value}}}",
+                            $"<Invalid PB number value: {match.Groups[i].Value}>"
+                        );
                     }
                 }
             }
+
+            matches = Regex.Matches(format, BestPatternSession);
+            foreach (Match match in matches) {
+                for (var i = 1; i < match.Groups.Count; i++) {
+                    var pbNumberStr = match.Groups[i].Value;
+                    try {
+                        var pbNumberInt = int.Parse(pbNumberStr);
+                        if (pbNumberInt < 1)
+                            throw new ArgumentException();
+
+                        if (!pbRoomsToFormatSession.ContainsKey(pbNumberInt))
+                            pbRoomsToFormatSession.Add(pbNumberInt, null);
+                    } catch (FormatException) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestSession#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
+                    } catch (ArgumentException) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestSession#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestSession#{match.Groups[i].Value}}}", $"<PB number must be 1 or greater: {match.Groups[i].Value}>");
+                    } catch (Exception) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestSession#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
+                    }
+                }
+            }
+
+            matches = Regex.Matches(format, RoomNumberPattern);
+            foreach (Match match in matches) {
+                for (var i = 1; i < match.Groups.Count; i++) {
+                    var pbNumberStr = match.Groups[i].Value;
+                    try {
+                        var pbNumberInt = int.Parse(pbNumberStr);
+                        if (pbNumberInt < 1)
+                            throw new ArgumentException();
+
+                        if (!pbRoomNumbersToFormat.ContainsKey(pbNumberInt))
+                            pbRoomNumbersToFormat.Add(pbNumberInt, null);
+                    } catch (FormatException) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
+                    } catch (ArgumentException) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}", $"<PB number must be 1 or greater: {match.Groups[i].Value}>");
+                    } catch (Exception) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestRoomNumber#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
+                    }
+                }
+            }
+
+            matches = Regex.Matches(format, RoomNumberPatternSession);
+            foreach (Match match in matches) {
+                for (var i = 1; i < match.Groups.Count; i++) {
+                    var pbNumberStr = match.Groups[i].Value;
+                    try {
+                        var pbNumberInt = int.Parse(pbNumberStr);
+                        if (pbNumberInt < 1)
+                            throw new ArgumentException();
+
+                        if (!pbRoomNumbersToFormatSession.ContainsKey(pbNumberInt))
+                            pbRoomNumbersToFormatSession.Add(pbNumberInt, null);
+                    } catch (FormatException) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
+                    } catch (ArgumentException) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}", $"<PB number must be 1 or greater: {match.Groups[i].Value}>");
+                    } catch (Exception) {
+                        if (invalidFormats.ContainsKey($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}"))
+                            continue;
+                        invalidFormats.Add($"{{pb:bestRoomNumberSession#{match.Groups[i].Value}}}", $"<Invalid PB number value: {match.Groups[i].Value}>");
+                    }
+                }
+            }
+
+            var pbNumber = 0;
+            var pbNumberSession = 0;
+            var nameFormat = StatManager.RoomNameType;
+
+            //Walk the path BACKWARDS (d1d7 reference???)
+            for (var cpIndex = chapterPath.Checkpoints.Count - 1; cpIndex >= 0; cpIndex--) {
+                var cpInfo = chapterPath.Checkpoints[cpIndex];
+
+                for (var roomIndex = cpInfo.Rooms.Count - 1; roomIndex >= 0; roomIndex--) {
+                    var rInfo = cpInfo.Rooms[roomIndex];
+
+                    var goldenDeaths = chapterStats.GetRoom(rInfo.DebugRoomName).GoldenBerryDeaths;
+                    var goldenDeathsSession = chapterStats
+                        .GetRoom(rInfo.DebugRoomName)
+                        .GoldenBerryDeathsSession;
+
+                    if (goldenDeaths > 0) {
+                        var roomName = rInfo.GetFormattedRoomName(nameFormat);
+                        if (goldenDeaths > 1)
+                            roomName = $"{roomName} x{goldenDeaths}";
+
+                        pbNumber++;
+                        if (pbRoomsToFormat.ContainsKey(pbNumber)) {
+                            pbRoomsToFormat[pbNumber] = roomName;
+                        }
+                        if (pbRoomNumbersToFormat.ContainsKey(pbNumber)) {
+                            pbRoomNumbersToFormat[pbNumber] = $"{rInfo.RoomNumberInChapter}";
+                        }
+                    }
+
+                    if (goldenDeathsSession <= 0)
+                        continue;
+                    {
+                        var roomName = rInfo.GetFormattedRoomName(nameFormat);
+                        if (goldenDeathsSession > 1)
+                            roomName = $"{roomName} x{goldenDeathsSession}";
+
+                        pbNumberSession++;
+                        if (pbRoomsToFormatSession.ContainsKey(pbNumberSession)) {
+                            pbRoomsToFormatSession[pbNumberSession] = roomName;
+                        }
+                        if (pbRoomNumbersToFormatSession.ContainsKey(pbNumberSession)) {
+                            pbRoomNumbersToFormatSession[pbNumberSession] =
+                                $"{rInfo.RoomNumberInChapter}";
+                        }
+                    }
+                }
+            }
+
+            //Output requested best runs
+            //Best runs
+            foreach (var pb in pbRoomsToFormat.Keys) {
+                var formatted = pbRoomsToFormat[pb];
+                formatted = formatted ?? "-";
+
+                format = format.Replace($"{{pb:best#{pb}}}", formatted);
+                if (pb == 1)
+                    format = format.Replace($"{{pb:best}}", formatted);
+            }
+            //Best runs session
+            foreach (var pb in pbRoomsToFormatSession.Keys) {
+                var formatted = pbRoomsToFormatSession[pb];
+                formatted = formatted ?? "-";
+
+                format = format.Replace($"{{pb:bestSession#{pb}}}", formatted);
+                if (pb == 1)
+                    format = format.Replace($"{{pb:bestSession}}", formatted);
+            }
+
+            //Room numbers of best runs
+            foreach (var pb in pbRoomNumbersToFormat.Keys) {
+                var formatted = pbRoomNumbersToFormat[pb];
+                formatted = formatted ?? "-";
+
+                format = format.Replace($"{{pb:bestRoomNumber#{pb}}}", formatted);
+                if (pb == 1)
+                    format = format.Replace($"{{pb:bestRoomNumber}}", formatted);
+            }
+            //Room numbers of best runs session
+            foreach (var pb in pbRoomNumbersToFormatSession.Keys) {
+                var formatted = pbRoomNumbersToFormatSession[pb];
+                formatted = formatted ?? "-";
+
+                format = format.Replace($"{{pb:bestRoomNumberSession#{pb}}}", formatted);
+                if (pb == 1)
+                    format = format.Replace($"{{pb:bestRoomNumberSession}}", formatted);
+            }
+
+            //Output formatting errors
+
+            return invalidFormats.Aggregate(format, (current, kvPair) => current.Replace(kvPair.Key, kvPair.Value));
         }
 
-        //Output requested best runs
-        //Best runs
-        foreach (var pb in pbRoomsToFormat.Keys) {
-            var formatted = pbRoomsToFormat[pb];
-            formatted ??= "-";
-
-            format = format.Replace($"{{pb:best#{pb}}}", formatted);
-            if (pb == 1)
-                format = format.Replace($"{{pb:best}}", formatted);
-        }
-        //Best runs session
-        foreach (var pb in pbRoomsToFormatSession.Keys) {
-            var formatted = pbRoomsToFormatSession[pb];
-            formatted ??= "-";
-
-            format = format.Replace($"{{pb:bestSession#{pb}}}", formatted);
-            if (pb == 1)
-                format = format.Replace($"{{pb:bestSession}}", formatted);
+        public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
+            return null;
         }
 
-        //Room numbers of best runs
-        foreach (var pb in pbRoomNumbersToFormat.Keys) {
-            var formatted = pbRoomNumbersToFormat[pb];
-            formatted ??= "-";
-
-            format = format.Replace($"{{pb:bestRoomNumber#{pb}}}", formatted);
-            if (pb == 1)
-                format = format.Replace($"{{pb:bestRoomNumber}}", formatted);
-        }
-        //Room numbers of best runs session
-        foreach (var pb in pbRoomNumbersToFormatSession.Keys) {
-            var formatted = pbRoomNumbersToFormatSession[pb];
-            formatted ??= "-";
-
-            format = format.Replace($"{{pb:bestRoomNumberSession#{pb}}}", formatted);
-            if (pb == 1)
-                format = format.Replace($"{{pb:bestRoomNumberSession}}", formatted);
-        }
-
-        //Output formatting errors
-
-        return invalidFormats.Aggregate(format, (current, kvPair) => current.Replace(kvPair.Key, kvPair.Value));
-    }
-
-    public override string FormatSummary(PathInfo chapterPath, ChapterStats chapterStats) {
-        return null;
-    }
-
-    public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
-        return new List<KeyValuePair<string, string>>()
-        {
-            new(PBBest, "Name of the PB room + the death count if it's greater than 1"),
-            new(PBBestSession, $"Same as {PBBest}, but only runs in the current session"),
-            new("{pb:best#<num>}", $"Same as {PBBest}, but for the <num>'s best run. {{pb:best#1}} is equivalent to {PBBest}"),
-            new("{pb:bestSession#<num>}", $"Same as {PBBest} for current session, but for the <num>'s best run. {{pb:bestSession#1}} is equivalent to {PBBestSession}"),
-            new(PBBestRoomNumber, "Number of the PB room in the chapter"),
-            new(PBBestRoomNumberSession, $"Same as {PBBestRoomNumber}, but only runs in the current session"),
-            new("{pb:bestRoomNumber#<num>}", $"Same as {PBBestRoomNumber}, but for the <num>'s best run. {{pb:bestRoomNumber#1}} is equivalent to {PBBestRoomNumber}"),
-            new("{pb:bestRoomNumberSession#<num>}", $"Same as {PBBestRoomNumber} for current session, but for the <num>'s best run. {{pb:bestRoomNumberSession#1}} is equivalent to {PBBestRoomNumberSession}"),
+        public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
+            return new List<KeyValuePair<string, string>>()
+            {
+            new KeyValuePair<string, string>(PBBest, "Name of the PB room + the death count if it's greater than 1"),
+            new KeyValuePair<string, string>(PBBestSession, $"Same as {PBBest}, but only runs in the current session"),
+            new KeyValuePair<string, string>("{pb:best#<num>}", $"Same as {PBBest}, but for the <num>'s best run. {{pb:best#1}} is equivalent to {PBBest}"),
+            new KeyValuePair<string, string>("{pb:bestSession#<num>}", $"Same as {PBBest} for current session, but for the <num>'s best run. {{pb:bestSession#1}} is equivalent to {PBBestSession}"),
+            new KeyValuePair<string, string>(PBBestRoomNumber, "Number of the PB room in the chapter"),
+            new KeyValuePair<string, string>(PBBestRoomNumberSession, $"Same as {PBBestRoomNumber}, but only runs in the current session"),
+            new KeyValuePair<string, string>("{pb:bestRoomNumber#<num>}", $"Same as {PBBestRoomNumber}, but for the <num>'s best run. {{pb:bestRoomNumber#1}} is equivalent to {PBBestRoomNumber}"),
+            new KeyValuePair<string, string>("{pb:bestRoomNumberSession#<num>}", $"Same as {PBBestRoomNumber} for current session, but for the <num>'s best run. {{pb:bestRoomNumberSession#1}} is equivalent to {PBBestRoomNumberSession}"),
         };
-    }
+        }
 
-    public override List<StatFormat> GetStatExamples() {
-        return new List<StatFormat>()
-        {
-            new("pbs", $"Best runs: {PBBest} | {{pb:best#2}} | {{pb:best#3}} | {{pb:best#4}} | {{pb:best#5}}"),
-            new("pbs-session", $"Best runs (Session): {PBBestSession} | {{pb:bestSession#2}} | {{pb:bestSession#3}} | {{pb:bestSession#4}} | {{pb:bestSession#5}}"),
-            new("pb-only", $"PB: {PBBest} ({PBBestRoomNumber}/{LiveProgressStat.ChapterRoomCount})"),
+        public override List<StatFormat> GetStatExamples() {
+            return new List<StatFormat>()
+            {
+            new StatFormat("pbs", $"Best runs: {PBBest} | {{pb:best#2}} | {{pb:best#3}} | {{pb:best#4}} | {{pb:best#5}}"),
+            new StatFormat("pbs-session", $"Best runs (Session): {PBBestSession} | {{pb:bestSession#2}} | {{pb:bestSession#3}} | {{pb:bestSession#4}} | {{pb:bestSession#5}}"),
+            new StatFormat("pb-only", $"PB: {PBBest} ({PBBestRoomNumber}/{LiveProgressStat.ChapterRoomCount})"),
         };
+        }
     }
 }

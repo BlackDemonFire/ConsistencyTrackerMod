@@ -68,7 +68,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
 
         public static string CampaignName = "{campaign:name}";
 
-        public static List<string> IDs = new() {
+        public static List<string> IDs = new List<string>() {
             PlayerHoldingGolden, PlayerGoldenDone, PlayerChapterCompleted,
             ModTrackingPaused, ModRecordingPath, ModModVersion, ModOverlayVersion,
             RoomDebugName, RoomGoldenDeaths, RoomGoldenDeathsSession,

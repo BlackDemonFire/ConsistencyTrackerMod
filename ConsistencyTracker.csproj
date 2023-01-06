@@ -5,13 +5,22 @@
     <TargetFramework>net452</TargetFramework>
     <AssemblyName>ConsistencyTracker</AssemblyName>
     <RootNamespace>Celeste.Mod.ConsistencyTracker</RootNamespace>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <StrippedLibraries>lib-stripped</StrippedLibraries>
     <CelesteGamePath Condition="'$(CelesteGamePath)' == '' And Exists('..\..\Celeste.exe')">..\..</CelesteGamePath>
     <CelesteGamePath Condition="'$(CelesteGamePath)' == ''">$(StrippedLibraries)</CelesteGamePath>
     <CelesteType Condition="'$(CelesteType)' == '' And Exists('$(CelesteGamePath)\BuildIsXNA.txt')">XNA</CelesteType>
     <CelesteType Condition="'$(CelesteType)' == ''">FNA</CelesteType>
     <XNAPath Condition="'$(XNAPath)' == ''">$(WINDIR)\Microsoft.NET\assembly\GAC_32\{0}\v4.0_4.0.0.0__842cf8be1de50553\{0}.dll</XNAPath>
+    <ErrorReport>send</ErrorReport>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <!--Disable "Copy Local" for all references-->

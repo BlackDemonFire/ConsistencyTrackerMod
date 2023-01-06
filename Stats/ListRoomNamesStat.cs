@@ -15,7 +15,7 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
     public class ListRoomNamesStat : Stat {
         public static string ListRoomNames = "{list:roomNames}";
 
-        public static List<string> IDs = new() { ListRoomNames, };
+        public static List<string> IDs = new List<string>() { ListRoomNames, };
 
         public ListRoomNamesStat() : base(IDs) { }
 
@@ -56,15 +56,15 @@ namespace Celeste.Mod.ConsistencyTracker.Stats {
         public override List<KeyValuePair<string, string>> GetPlaceholderExplanations() {
             return new List<KeyValuePair<string, string>>()
             {
-                new(ListRoomNames, "Outputs the current path as list"),
-                new(ListSuccessRatesStat.ListSuccessRates, "Outputs the success rate for all rooms on the current path as list"),
-                new(ListChokeRatesStat.ListChokeRates, "Outputs the choke rates for all rooms on the current path as list"),
-                new(StreakStat.ListRoomStreaks, "Outputs the current streaks for all rooms on the current path as list"),
+                new KeyValuePair<string, string>(ListRoomNames, "Outputs the current path as list"),
+                new KeyValuePair<string, string>(ListSuccessRatesStat.ListSuccessRates, "Outputs the success rate for all rooms on the current path as list"),
+                new KeyValuePair<string, string>(ListChokeRatesStat.ListChokeRates, "Outputs the choke rates for all rooms on the current path as list"),
+                new KeyValuePair<string, string>(StreakStat.ListRoomStreaks, "Outputs the current streaks for all rooms on the current path as list"),
             };
         }
         public override List<StatFormat> GetStatExamples() {
             return new List<StatFormat>() {
-                new("list-room-names", $"Names: {ListRoomNames}\\nSuccess Rates: {ListSuccessRatesStat.ListSuccessRates}\\nChoke Rates: {ListChokeRatesStat.ListChokeRates}\\n"),
+                new StatFormat("list-room-names", $"Names: {ListRoomNames}\\nSuccess Rates: {ListSuccessRatesStat.ListSuccessRates}\\nChoke Rates: {ListChokeRatesStat.ListChokeRates}\\n"),
             };
         }
     }
